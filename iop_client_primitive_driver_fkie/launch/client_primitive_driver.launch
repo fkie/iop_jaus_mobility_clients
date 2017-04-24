@@ -1,0 +1,48 @@
+<launch>
+  <arg name="ns" default="telemax"/>
+  <arg name="id_subsystem" default="128"/>
+  <arg name="id_node" default="64"/>
+  <group ns="$(arg ns)">
+    <node name="joystick_interpreter" pkg="joystick_fkie" type="joystick_interpreter">
+      <!-- minimum time between publishing speed changes (seconds)"-->
+      <param name="minimumChangeInterval" value="0.025" />
+      <!-- time between republishing speed -->
+      <param name="repeatInterval" value="0.2" />
+      <param name="capability_group" value="base"/>
+      <param name="TurnNavOn" type="double" value="5.0"/>
+      <rosparam param="Rotation">
+        b1: 0.25
+        b2: 0.5
+        b3: 0.75
+        b4: 1.0
+      </rosparam>
+      <rosparam param="Velocity">
+        b1: -0.25
+        b2: -0.5
+        b3: -0.75
+        b4: -1.0
+      </rosparam>
+      <remap from="cmd_vel" to="joy_cmd_vel" />
+    </node>
+
+    <node name="joystick" pkg="joystick_fkie" type="joystick">
+      <param name="capability_group" value="base"/>
+      <param name="autorepeat_rate" type="double" value="5" />
+      <!--param name="dev" type="string" value="/dev/input/by-id/usb-Logitech_Wireless_Gamepad_F710_82EE91DD-joystick"/-->
+    </node>
+
+    <node name="twist_prioritizer_fkie" pkg="joystick_fkie" type="twist_prioritizer" >
+      <param name="capability_group" value="base"/>
+    </node>
+
+    <node name="iop_client_primitive_driver" pkg="iop_client_primitive_driver_fkie" type="iop_client_primitive_driver" >
+      <param name="capability_group" value="iop_bridge"/>
+      <param name="id_subsystem" value="$(arg id_subsystem)"/>
+      <param name="id_node" value="$(arg id_node)"/>
+      <param name="id_component" value="133"/>
+<!--      <param name="control_component_addr" value="127.$(arg id_node).33"/>-->
+      <param name="register_own_services" value="false" />
+      <remap from="joy_cmd_vel" to="joy_cmd_vel"/>
+    </node>
+  </group>
+</launch>

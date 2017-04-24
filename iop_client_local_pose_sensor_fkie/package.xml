@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package>
+  <name>iop_client_local_pose_sensor_fkie</name>
+  <version>1.0.0</version>
+  <description>The client service for LocalPoseSensor service </description>
+
+  <maintainer email="alexander.tiderko@fkie.fraunhofer.de">Alexander Tiderko</maintainer>
+  <license>GPLv2</license>
+  <url type="website">https://github.com/fkie/iop_jaus_mobility_clients</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>iop_builder_fkie</build_depend>
+  <build_depend>iop_component_fkie</build_depend>
+  <build_depend>iop_ocu_control_layerlib_1_0_fkie</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>tf2</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <run_depend>boost</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>iop_builder_fkie</run_depend>
+  <run_depend>iop_component_fkie</run_depend>
+  <run_depend>iop_ocu_control_layerlib_1_0_fkie</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>tf2</run_depend>
+  <run_depend>tf2_ros</run_depend>
+
+  <export>
+    <iop_component_fkie plugin="${prefix}/plugin_iop.xml" />
+  </export>
+
+</package>
