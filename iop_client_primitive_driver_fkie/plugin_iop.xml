@@ -1,7 +1,10 @@
 <library path="libiop_client_primitive_driver_fkie">
-  <class name="urn:jaus:jss:mobility:PrimitiveDriverClient_1_0" type="iop::PrimitiveDriverClientPlugin_1_0" base_class_type="iop::PluginInterface">
+  <class name="PrimitiveDriverClient_1_0" type="iop::PrimitiveDriverClientPlugin_1_0" base_class_type="iop::PluginInterface">
     <description>
       PrimitiveDriver client Service Plugin, used e.g. by OCU
     </description>
+    <iop_service name="PrimitiveDriverClient" id="urn:jaus:jss:mobility:PrimitiveDriverClient" version="1.0">
+      <inherits_from id="urn:jaus:jss:core:ManagementClient" min_version="1.0"/>
+    </iop_service>
   </class>
 </library>

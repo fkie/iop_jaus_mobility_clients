@@ -1,7 +1,10 @@
 <library path="libiop_client_local_pose_sensor_fkie">
-  <class name="urn:jaus:jss:mobility:LocalPoseSensorClient_1_0" type="iop::LocalPoseSensorClientPlugin_1_0" base_class_type="iop::PluginInterface">
+  <class name="LocalPoseSensorClient_1_0" type="iop::LocalPoseSensorClientPlugin_1_0" base_class_type="iop::PluginInterface">
     <description>
       LocalPoseSensor client Service Plugin, used e.g. by OCU
     </description>
+    <iop_service name="LocalPoseSensorClient" id="urn:jaus:jss:mobility:LocalPoseSensorClient" version="1.0">
+      <inherits_from id="urn:jaus:jss:core:AccessControlClient" min_version="1.0"/>
+    </iop_service>
   </class>
 </library>

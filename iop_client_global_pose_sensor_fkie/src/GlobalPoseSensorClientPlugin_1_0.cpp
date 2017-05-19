@@ -40,30 +40,19 @@ GlobalPoseSensorClientPlugin_1_0::GlobalPoseSensorClientPlugin_1_0()
 
 GlobalPoseSensorClientPlugin_1_0::~GlobalPoseSensorClientPlugin_1_0()
 {
-
+	delete p_my_service;
 }
 
-JTS::Service* GlobalPoseSensorClientPlugin_1_0::get_iop_service()
+JTS::Service* GlobalPoseSensorClientPlugin_1_0::get_service()
 {
 	return p_my_service;
 }
 
-const std::type_info & GlobalPoseSensorClientPlugin_1_0::get_iop_service_type()
+void GlobalPoseSensorClientPlugin_1_0::create_service(JTS::JausRouter* jaus_router)
 {
-	return typeid(GlobalPoseSensorClientService);
-}
-
-const std::type_info & GlobalPoseSensorClientPlugin_1_0::get_base_service_type()
-{
-	return typeid(AccessControlClientService);
-}
-
-
-void GlobalPoseSensorClientPlugin_1_0::create_jts_service(JTS::JausRouter* jaus_router)
-{
-	p_base_service = dynamic_cast<AccessControlClientService *>(get_base_service());
-	p_events_service = dynamic_cast<EventsClientService *>(get_base_service(2));
-	p_transport_service = dynamic_cast<TransportService *>(get_base_service(3));
+	p_base_service = static_cast<AccessControlClientService *>(get_base_service());
+	p_events_service = static_cast<EventsClientService *>(get_base_service(2));
+	p_transport_service = static_cast<TransportService *>(get_base_service(3));
 	p_my_service = new GlobalPoseSensorClientService(jaus_router, p_transport_service, p_events_service, p_base_service);
 }
 
