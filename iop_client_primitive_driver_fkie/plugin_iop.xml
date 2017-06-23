@@ -1,5 +1,5 @@
 <library path="libiop_client_primitive_driver_fkie">
-  <class name="PrimitiveDriverClient_1_0" type="iop::PrimitiveDriverClientPlugin_1_0" base_class_type="iop::PluginInterface">
+  <class name="PrimitiveDriverClient" type="iop::PrimitiveDriverClientPlugin" base_class_type="iop::PluginInterface">
     <description>
       PrimitiveDriver client Service Plugin, used e.g. by OCU
     </description>

@@ -28,16 +28,16 @@ along with this program; or you can read the full license at
 #include "InternalEvents/InternalEventHandler.h"
 #include "Transport/JausTransport.h"
 #include "JTSStateMachine.h"
-#include "urn_jaus_jss_mobility_PrimitiveDriverClient_1_0/Messages/MessageSet.h"
-#include "urn_jaus_jss_mobility_PrimitiveDriverClient_1_0/InternalEvents/InternalEventsSet.h"
+#include "urn_jaus_jss_mobility_PrimitiveDriverClient/Messages/MessageSet.h"
+#include "urn_jaus_jss_mobility_PrimitiveDriverClient/InternalEvents/InternalEventsSet.h"
 
-typedef JTS::Receive_1_0 Receive;
-typedef JTS::Send_1_0 Send;
+typedef JTS::Receive Receive;
+typedef JTS::Send Send;
 
-#include "urn_jaus_jss_core_Transport_1_0/Transport_ReceiveFSM.h"
-#include "urn_jaus_jss_core_EventsClient_1_0/EventsClient_ReceiveFSM.h"
-#include "urn_jaus_jss_core_AccessControlClient_1_0/AccessControlClient_ReceiveFSM.h"
-#include "urn_jaus_jss_core_ManagementClient_1_0/ManagementClient_ReceiveFSM.h"
+#include "urn_jaus_jss_core_Transport/Transport_ReceiveFSM.h"
+#include "urn_jaus_jss_core_EventsClient/EventsClient_ReceiveFSM.h"
+#include "urn_jaus_jss_core_AccessControlClient/AccessControlClient_ReceiveFSM.h"
+#include "urn_jaus_jss_core_ManagementClient/ManagementClient_ReceiveFSM.h"
 
 
 #include "PrimitiveDriverClient_ReceiveFSM_sm.h"
@@ -46,16 +46,16 @@ typedef JTS::Send_1_0 Send;
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Int16.h>
-#include <iop_ocu_control_layerlib_1_0_fkie/OcuControlLayerSlave.h>
+#include <iop_ocu_control_layerlib_fkie/OcuControlLayerSlave.h>
 
 
-namespace urn_jaus_jss_mobility_PrimitiveDriverClient_1_0
+namespace urn_jaus_jss_mobility_PrimitiveDriverClient
 {
 
 class DllExport PrimitiveDriverClient_ReceiveFSM : public JTS::StateMachine
 {
 public:
-	PrimitiveDriverClient_ReceiveFSM(urn_jaus_jss_core_Transport_1_0::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient_1_0::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient_1_0::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_ManagementClient_1_0::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM);
+	PrimitiveDriverClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM);
 	virtual ~PrimitiveDriverClient_ReceiveFSM();
 
 	/// Handle notifications on parent state changes
@@ -74,10 +74,10 @@ public:
 protected:
 
     /// References to parent FSMs
-	urn_jaus_jss_core_Transport_1_0::Transport_ReceiveFSM* pTransport_ReceiveFSM;
-	urn_jaus_jss_core_EventsClient_1_0::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM;
-	urn_jaus_jss_core_AccessControlClient_1_0::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM;
-	urn_jaus_jss_core_ManagementClient_1_0::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM;
+	urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM;
+	urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM;
+	urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM;
+	urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM;
 
 	OcuControlLayerSlave p_ocu_control_layer_slave;
 	ros::NodeHandle p_nh;

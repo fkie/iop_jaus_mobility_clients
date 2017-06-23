@@ -20,19 +20,19 @@ along with this program; or you can read the full license at
 
 /** \author Alexander Tiderko */
 
-#include "urn_jaus_jss_mobility_PrimitiveDriverClient_1_0/PrimitiveDriverClient_ReceiveFSM.h"
+#include "urn_jaus_jss_mobility_PrimitiveDriverClient/PrimitiveDriverClient_ReceiveFSM.h"
 
 
 
 
 using namespace JTS;
 
-namespace urn_jaus_jss_mobility_PrimitiveDriverClient_1_0
+namespace urn_jaus_jss_mobility_PrimitiveDriverClient
 {
 
 
 
-PrimitiveDriverClient_ReceiveFSM::PrimitiveDriverClient_ReceiveFSM(urn_jaus_jss_core_Transport_1_0::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient_1_0::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient_1_0::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_ManagementClient_1_0::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM)
+PrimitiveDriverClient_ReceiveFSM::PrimitiveDriverClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM)
 {
 
 	/*

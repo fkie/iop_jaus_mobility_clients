@@ -21,7 +21,7 @@ along with this program; or you can read the full license at
 /** \author Alexander Tiderko */
 
 
-#include "urn_jaus_jss_mobility_GlobalPoseSensorClient_1_0/GlobalPoseSensorClient_ReceiveFSM.h"
+#include "urn_jaus_jss_mobility_GlobalPoseSensorClient/GlobalPoseSensorClient_ReceiveFSM.h"
 
 #include <tf/transform_datatypes.h>
 #include <sensor_msgs/NavSatFix.h>
@@ -31,12 +31,12 @@ along with this program; or you can read the full license at
 
 using namespace JTS;
 
-namespace urn_jaus_jss_mobility_GlobalPoseSensorClient_1_0
+namespace urn_jaus_jss_mobility_GlobalPoseSensorClient
 {
 
 
 
-GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(urn_jaus_jss_core_Transport_1_0::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient_1_0::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient_1_0::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM)
+GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM)
 {
 
 	/*
@@ -86,10 +86,14 @@ void GlobalPoseSensorClient_ReceiveFSM::pAccessStateHandler(JausAddress &address
 	}
 }
 
-void GlobalPoseSensorClient_ReceiveFSM::pHandleEventReportGlobalPose(Receive::Body::ReceiveRec &transport_data, urn_jaus_jss_core_EventsClient_1_0::Event &msg)
+void GlobalPoseSensorClient_ReceiveFSM::pHandleEventReportGlobalPose(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata)
 {
 	ReportGlobalPose report;
-	report.decode(msg.getBody()->getEventRec()->getReportMessage()->getData());
+	report.decode(reportdata);
+	Receive::Body::ReceiveRec transport_data;
+	transport_data.setSrcSubsystemID(sender.getSubsystemID());
+	transport_data.setSrcNodeID(sender.getNodeID());
+	transport_data.setSrcComponentID(sender.getComponentID());
 	handleReportGlobalPoseAction(report, transport_data);
 }
 

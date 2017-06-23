@@ -21,33 +21,33 @@ along with this program; or you can read the full license at
 /** \author Alexander Tiderko */
 
 
-#ifndef GLOBALPOSESENSORCLIENTPLUGIN_1_0_H
-#define GLOBALPOSESENSORCLIENTPLUGIN_1_0_H
+#ifndef GLOBALPOSESENSORCLIENTPLUGIN_H
+#define GLOBALPOSESENSORCLIENTPLUGIN_H
 
-#include "urn_jaus_jss_mobility_GlobalPoseSensorClient_1_0/GlobalPoseSensorClientService.h"
-#include "urn_jaus_jss_core_AccessControlClient_1_0/AccessControlClientService.h"
-#include "urn_jaus_jss_core_EventsClient_1_0/EventsClientService.h"
-#include "urn_jaus_jss_core_Transport_1_0/TransportService.h"
+#include "urn_jaus_jss_mobility_GlobalPoseSensorClient/GlobalPoseSensorClientService.h"
+#include "urn_jaus_jss_core_AccessControlClient/AccessControlClientService.h"
+#include "urn_jaus_jss_core_EventsClient/EventsClientService.h"
+#include "urn_jaus_jss_core_Transport/TransportService.h"
 
 #include <iop_component_fkie/iop_plugin_interface.h>
 
 namespace iop
 {
 
-class DllExport GlobalPoseSensorClientPlugin_1_0 : public PluginInterface
+class DllExport GlobalPoseSensorClientPlugin : public PluginInterface
 {
 public:
-	GlobalPoseSensorClientPlugin_1_0();
+	GlobalPoseSensorClientPlugin();
 
 	JTS::Service* get_service();
 	void create_service(JTS::JausRouter* jaus_router);
-	virtual ~GlobalPoseSensorClientPlugin_1_0();
+	virtual ~GlobalPoseSensorClientPlugin();
 
 protected:
-	urn_jaus_jss_mobility_GlobalPoseSensorClient_1_0::GlobalPoseSensorClientService *p_my_service;
-	urn_jaus_jss_core_AccessControlClient_1_0::AccessControlClientService *p_base_service;
-	urn_jaus_jss_core_EventsClient_1_0::EventsClientService *p_events_service;
-	urn_jaus_jss_core_Transport_1_0::TransportService *p_transport_service;
+	urn_jaus_jss_mobility_GlobalPoseSensorClient::GlobalPoseSensorClientService *p_my_service;
+	urn_jaus_jss_core_AccessControlClient::AccessControlClientService *p_base_service;
+	urn_jaus_jss_core_EventsClient::EventsClientService *p_events_service;
+	urn_jaus_jss_core_Transport::TransportService *p_transport_service;
 
 };
 

@@ -27,16 +27,16 @@ along with this program; or you can read the full license at
 #include "InternalEvents/InternalEventHandler.h"
 #include "Transport/JausTransport.h"
 #include "JTSStateMachine.h"
-#include "urn_jaus_jss_mobility_LocalPoseSensorClient_1_0/Messages/MessageSet.h"
-#include "urn_jaus_jss_mobility_LocalPoseSensorClient_1_0/InternalEvents/InternalEventsSet.h"
+#include "urn_jaus_jss_mobility_LocalPoseSensorClient/Messages/MessageSet.h"
+#include "urn_jaus_jss_mobility_LocalPoseSensorClient/InternalEvents/InternalEventsSet.h"
 
-typedef JTS::Receive_1_0 Receive;
-typedef JTS::Send_1_0 Send;
+typedef JTS::Receive Receive;
+typedef JTS::Send Send;
 
-#include "urn_jaus_jss_core_Transport_1_0/Transport_ReceiveFSM.h"
-#include "urn_jaus_jss_core_EventsClient_1_0/EventsClient_ReceiveFSM.h"
-#include "urn_jaus_jss_core_EventsClient_1_0/Messages/MessageSet.h"
-#include "urn_jaus_jss_core_AccessControlClient_1_0/AccessControlClient_ReceiveFSM.h"
+#include "urn_jaus_jss_core_Transport/Transport_ReceiveFSM.h"
+#include "urn_jaus_jss_core_EventsClient/EventsClient_ReceiveFSM.h"
+#include "urn_jaus_jss_core_EventsClient/Messages/MessageSet.h"
+#include "urn_jaus_jss_core_AccessControlClient/AccessControlClient_ReceiveFSM.h"
 
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -45,16 +45,16 @@ typedef JTS::Send_1_0 Send;
 #include <nav_msgs/Odometry.h>
 
 #include "LocalPoseSensorClient_ReceiveFSM_sm.h"
-#include <iop_ocu_control_layerlib_1_0_fkie/OcuControlLayerSlave.h>
+#include <iop_ocu_control_layerlib_fkie/OcuControlLayerSlave.h>
 
 
-namespace urn_jaus_jss_mobility_LocalPoseSensorClient_1_0
+namespace urn_jaus_jss_mobility_LocalPoseSensorClient
 {
 
 class DllExport LocalPoseSensorClient_ReceiveFSM : public JTS::StateMachine
 {
 public:
-	LocalPoseSensorClient_ReceiveFSM(urn_jaus_jss_core_Transport_1_0::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient_1_0::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient_1_0::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM);
+	LocalPoseSensorClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM);
 	virtual ~LocalPoseSensorClient_ReceiveFSM();
 
 	/// Handle notifications on parent state changes
@@ -73,9 +73,9 @@ public:
 protected:
 
     /// References to parent FSMs
-	urn_jaus_jss_core_Transport_1_0::Transport_ReceiveFSM* pTransport_ReceiveFSM;
-	urn_jaus_jss_core_EventsClient_1_0::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM;
-	urn_jaus_jss_core_AccessControlClient_1_0::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM;
+	urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM;
+	urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM;
+	urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM;
 
 	std::string p_tf_frame_odom;
 	std::string p_tf_frame_robot;
@@ -86,10 +86,10 @@ protected:
 	ros::Publisher p_pub_odom;
 	ros::Publisher p_pub_pose;
 
-	urn_jaus_jss_mobility_LocalPoseSensorClient_1_0::QueryLocalPose p_query_local_pose_msg;
+	urn_jaus_jss_mobility_LocalPoseSensorClient::QueryLocalPose p_query_local_pose_msg;
 	OcuControlLayerSlave p_ocu_control_layer_slave;
 	void pAccessStateHandler(JausAddress &address, unsigned char code);
-	void pHandleEventReportLocalPose(Receive::Body::ReceiveRec &transport_data, urn_jaus_jss_core_EventsClient_1_0::Event &msg);
+	void pHandleEventReportLocalPose(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata);
 
 };
 

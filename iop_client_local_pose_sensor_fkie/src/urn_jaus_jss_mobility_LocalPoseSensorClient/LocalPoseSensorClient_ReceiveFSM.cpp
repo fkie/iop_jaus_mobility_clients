@@ -21,19 +21,19 @@ along with this program; or you can read the full license at
 /** \author Alexander Tiderko */
 
 
-#include "urn_jaus_jss_mobility_LocalPoseSensorClient_1_0/LocalPoseSensorClient_ReceiveFSM.h"
+#include "urn_jaus_jss_mobility_LocalPoseSensorClient/LocalPoseSensorClient_ReceiveFSM.h"
 
 #include <tf/transform_datatypes.h>
 #include <iop_builder_fkie/timestamp.h>
 
 using namespace JTS;
 
-namespace urn_jaus_jss_mobility_LocalPoseSensorClient_1_0
+namespace urn_jaus_jss_mobility_LocalPoseSensorClient
 {
 
 
 
-LocalPoseSensorClient_ReceiveFSM::LocalPoseSensorClient_ReceiveFSM(urn_jaus_jss_core_Transport_1_0::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient_1_0::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient_1_0::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM)
+LocalPoseSensorClient_ReceiveFSM::LocalPoseSensorClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM)
 {
 
 	/*
@@ -90,10 +90,14 @@ void LocalPoseSensorClient_ReceiveFSM::pAccessStateHandler(JausAddress &address,
 	}
 }
 
-void LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose(Receive::Body::ReceiveRec &transport_data, urn_jaus_jss_core_EventsClient_1_0::Event &msg)
+void LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata)
 {
 	ReportLocalPose report;
-	report.decode(msg.getBody()->getEventRec()->getReportMessage()->getData());
+	report.decode(reportdata);
+	Receive::Body::ReceiveRec transport_data;
+	transport_data.setSrcSubsystemID(sender.getSubsystemID());
+	transport_data.setSrcNodeID(sender.getNodeID());
+	transport_data.setSrcComponentID(sender.getComponentID());
 	handleReportLocalPoseAction(report, transport_data);
 }
 

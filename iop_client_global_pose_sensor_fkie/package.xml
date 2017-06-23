@@ -10,15 +10,12 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
-  <build_depend>iop_builder_fkie</build_depend>
-  <build_depend>iop_component_fkie</build_depend>
-  <build_depend>iop_ocu_control_layerlib_1_0_fkie</build_depend>
+  <build_depend>iop_ocu_control_layerlib_fkie</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <run_depend>boost</run_depend>
   <run_depend>roscpp</run_depend>
-  <run_depend>iop_builder_fkie</run_depend>
   <run_depend>iop_component_fkie</run_depend>
-  <run_depend>iop_ocu_control_layerlib_1_0_fkie</run_depend>
+  <run_depend>iop_ocu_control_layerlib_fkie</run_depend>
   <run_depend>sensor_msgs</run_depend>
 
   <export>

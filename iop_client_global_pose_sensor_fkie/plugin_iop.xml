@@ -1,5 +1,5 @@
 <library path="libiop_client_global_pose_sensor_fkie">
-  <class name="GlobalPoseSensorClient_1_0" type="iop::GlobalPoseSensorClientPlugin_1_0" base_class_type="iop::PluginInterface">
+  <class name="GlobalPoseSensorClient" type="iop::GlobalPoseSensorClientPlugin" base_class_type="iop::PluginInterface">
     <description>
       GlobalPoseSensor client Service Plugin, used e.g. by OCU
     </description>

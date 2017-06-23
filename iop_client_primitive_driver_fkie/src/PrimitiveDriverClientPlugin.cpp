@@ -21,17 +21,17 @@ along with this program; or you can read the full license at
 /** \author Alexander Tiderko */
 
 #include <pluginlib/class_list_macros.h>
-#include "PrimitiveDriverClientPlugin_1_0.h"
+#include "PrimitiveDriverClientPlugin.h"
 
 using namespace iop;
-using namespace urn_jaus_jss_mobility_PrimitiveDriverClient_1_0;
-using namespace urn_jaus_jss_core_ManagementClient_1_0;
-using namespace urn_jaus_jss_core_AccessControlClient_1_0;
-using namespace urn_jaus_jss_core_EventsClient_1_0;
-using namespace urn_jaus_jss_core_Transport_1_0;
+using namespace urn_jaus_jss_mobility_PrimitiveDriverClient;
+using namespace urn_jaus_jss_core_ManagementClient;
+using namespace urn_jaus_jss_core_AccessControlClient;
+using namespace urn_jaus_jss_core_EventsClient;
+using namespace urn_jaus_jss_core_Transport;
 
 
-PrimitiveDriverClientPlugin_1_0::PrimitiveDriverClientPlugin_1_0()
+PrimitiveDriverClientPlugin::PrimitiveDriverClientPlugin()
 {
 	p_my_service = NULL;
 	p_base_service = NULL;
@@ -40,12 +40,12 @@ PrimitiveDriverClientPlugin_1_0::PrimitiveDriverClientPlugin_1_0()
 	p_transport_service = NULL;
 }
 
-JTS::Service* PrimitiveDriverClientPlugin_1_0::get_service()
+JTS::Service* PrimitiveDriverClientPlugin::get_service()
 {
 	return p_my_service;
 }
 
-void PrimitiveDriverClientPlugin_1_0::create_service(JTS::JausRouter* jaus_router)
+void PrimitiveDriverClientPlugin::create_service(JTS::JausRouter* jaus_router)
 {
 	p_base_service = static_cast<ManagementClientService *>(get_base_service());
 	p_accesscontrol_service = static_cast<AccessControlClientService *>(get_base_service(2));
@@ -54,4 +54,4 @@ void PrimitiveDriverClientPlugin_1_0::create_service(JTS::JausRouter* jaus_route
 	p_my_service = new PrimitiveDriverClientService(jaus_router, p_transport_service, p_events_service, p_accesscontrol_service, p_base_service);
 }
 
-PLUGINLIB_EXPORT_CLASS(iop::PrimitiveDriverClientPlugin_1_0, iop::PluginInterface)
+PLUGINLIB_EXPORT_CLASS(iop::PrimitiveDriverClientPlugin, iop::PluginInterface)

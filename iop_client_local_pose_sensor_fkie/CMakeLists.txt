@@ -6,9 +6,7 @@ project(iop_client_local_pose_sensor_fkie)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
                 geometry_msgs
-                iop_builder_fkie
-                iop_component_fkie
-                iop_ocu_control_layerlib_1_0_fkie
+                iop_ocu_control_layerlib_fkie
                 nav_msgs
                 roscpp
                 tf2
@@ -34,9 +32,7 @@ catkin_package(
     LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS
         geometry_msgs
-        iop_builder_fkie
-        iop_component_fkie
-        iop_ocu_control_layerlib_1_0_fkie
+        iop_ocu_control_layerlib_fkie
         nav_msgs
         tf2
         tf2_ros
@@ -61,31 +57,29 @@ iop_code_generator(
     urn.jaus.jss.mobility/LocalPoseSensorClient.xml
   OWN_IDLS
   OVERRIDES
-    include/urn_jaus_jss_mobility_LocalPoseSensorClient_1_0/LocalPoseSensorClient_ReceiveFSM.h
-    src/urn_jaus_jss_mobility_LocalPoseSensorClient_1_0/LocalPoseSensorClient_ReceiveFSM.cpp
+    include/urn_jaus_jss_mobility_LocalPoseSensorClient/LocalPoseSensorClient_ReceiveFSM.h
+    src/urn_jaus_jss_mobility_LocalPoseSensorClient/LocalPoseSensorClient_ReceiveFSM.cpp
     src/main.cpp
   EXTERN_SERVICES
-    urn_jaus_jss_core_AccessControlClient_1_0
-    urn_jaus_jss_core_EventsClient_1_0
-    urn_jaus_jss_core_DiscoveryClient_1_0
-    urn_jaus_jss_core_Transport_1_0
+    urn_jaus_jss_core_AccessControlClient
+    urn_jaus_jss_core_EventsClient
+    urn_jaus_jss_core_DiscoveryClient
+    urn_jaus_jss_core_Transport
   GENERATED_SOURCES cppfiles
 )
 
 include_directories(${catkin_INCLUDE_DIRS}
-                    ${IOP_INCLUDE_DIRS}
                     include/${PROJECT_NAME}
 )
 
 add_library(${PROJECT_NAME}
-            src/LocalPoseSensorClientPlugin_1_0.cpp
+            src/LocalPoseSensorClientPlugin.cpp
             ${cppfiles}
 )
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}
                       ${catkin_LIBRARIES}
-                      ${IOP_LIBRARIES}
 )
 
 #############
