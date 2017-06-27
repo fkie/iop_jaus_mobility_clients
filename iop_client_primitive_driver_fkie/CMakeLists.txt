@@ -14,7 +14,6 @@ iop_init(COMPONENT_ID 133)
 ## catkin specific configuration ##
 ###################################
 catkin_package(
-    INCLUDE_DIRS include/${PROJECT_NAME}
     LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS
         iop_ocu_control_layerlib_fkie
@@ -44,9 +43,7 @@ iop_code_generator(
     urn_jaus_jss_core_ManagementClient
   GENERATED_SOURCES cppfiles
 )
-include_directories(${catkin_INCLUDE_DIRS}
-                    include/${PROJECT_NAME}
-)
+include_directories(${catkin_INCLUDE_DIRS})
 
 ## Declare a cpp executable
 add_library(${PROJECT_NAME}
@@ -57,12 +54,6 @@ add_library(${PROJECT_NAME}
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}
                       ${catkin_LIBRARIES}
-)
-
-install(
-  DIRECTORY include/${PROJECT_NAME} DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
-  PATTERN "*.old" EXCLUDE
-  PATTERN "*.gen" EXCLUDE
 )
 
 install(TARGETS ${PROJECT_NAME}
