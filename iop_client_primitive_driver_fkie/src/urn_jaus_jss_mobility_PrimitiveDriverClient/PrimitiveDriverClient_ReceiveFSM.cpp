@@ -20,12 +20,14 @@ along with this program; or you can read the full license at
 
 /** \author Alexander Tiderko */
 
+#include <iop_ocu_slavelib_fkie/Slave.h>
 #include "urn_jaus_jss_mobility_PrimitiveDriverClient/PrimitiveDriverClient_ReceiveFSM.h"
 
 
 
 
 using namespace JTS;
+using namespace iop::ocu;
 
 namespace urn_jaus_jss_mobility_PrimitiveDriverClient
 {
@@ -73,29 +75,46 @@ void PrimitiveDriverClient_ReceiveFSM::setupNotifications()
 		p_cmd_sub = p_nh.subscribe<geometry_msgs::Twist>("joy_cmd_vel", 1, &PrimitiveDriverClient_ReceiveFSM::cmdReceived, this);
 	}
 	// initialize the control layer, which handles the access control staff
-	p_ocu_control_layer_slave.init(*(jausRouter->getJausAddress()), "urn:jaus:jss:mobility:PrimitiveDriver", 1, 0);
+	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
+	slave.add_supported_service(*this, "urn:jaus:jss:mobility:PrimitiveDriver", 1, 0);
 }
+
+void PrimitiveDriverClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)
+{
+	if (service_uri.compare("urn:jaus:jss:mobility:PrimitiveDriver") == 0) {
+		p_control_addr = component;
+	} else {
+		ROS_WARN_STREAM("[ClientPrimitiveDriver] unexpected control allowed for " << service_uri << " received, ignored!");
+	}
+}
+
+void PrimitiveDriverClient_ReceiveFSM::enable_monitoring_only(std::string service_uri, JausAddress component)
+{
+	// no events supported by PrimitiveDriver, ignore
+}
+
+void PrimitiveDriverClient_ReceiveFSM::access_deactivated(std::string service_uri, JausAddress component)
+{
+	p_control_addr = JausAddress(0);
+}
+
 
 void PrimitiveDriverClient_ReceiveFSM::handleReportWrenchEffortAction(ReportWrenchEffort msg, Receive::Body::ReceiveRec transportData)
 {
 	/// Insert User Code HERE
 }
 
-
 void PrimitiveDriverClient_ReceiveFSM::cmdReceived(const geometry_msgs::Twist::ConstPtr& cmd)
 {
-	JausAddress address = p_ocu_control_layer_slave.get_control_address();
-	if (address.get() != 0) {
-		if (p_ocu_control_layer_slave.has_access()) {
-			SetWrenchEffort msg;
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortX(cmd->linear.x*100);
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortY(cmd->linear.y*100);
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortZ(cmd->linear.z*100);
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortX(cmd->angular.x*100);
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortY(cmd->angular.y*100);
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(cmd->angular.z*100);
-			sendJausMessage(msg, address);
-		}
+	if (p_control_addr.get() != 0) {
+		SetWrenchEffort msg;
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortX(cmd->linear.x*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortY(cmd->linear.y*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortZ(cmd->linear.z*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortX(cmd->angular.x*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortY(cmd->angular.y*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(cmd->angular.z*100);
+		sendJausMessage(msg, p_control_addr);
 	}
 
 }
@@ -103,21 +122,15 @@ void PrimitiveDriverClient_ReceiveFSM::cmdReceived(const geometry_msgs::Twist::C
 
 void PrimitiveDriverClient_ReceiveFSM::cmdStampedReceived(const geometry_msgs::TwistStamped::ConstPtr& cmd)
 {
-	JausAddress address = p_ocu_control_layer_slave.get_control_address();
-	if (address.get() != 0) {
-		if (p_ocu_control_layer_slave.has_access()) {
-			SetWrenchEffort msg;
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortX(cmd->twist.linear.x*100);
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortY(cmd->twist.linear.y*100);
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortZ(cmd->twist.linear.z*100);
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortX(cmd->twist.angular.x*100);
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortY(cmd->twist.angular.y*100);
-			msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(cmd->twist.angular.z*100);
-			sendJausMessage(msg, address);
-		}
-//		} else {
-//			p_ocu_control_layer_slave.resume();
-//		}
+	if (p_control_addr.get() != 0) {
+		SetWrenchEffort msg;
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortX(cmd->twist.linear.x*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortY(cmd->twist.linear.y*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortZ(cmd->twist.linear.z*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortX(cmd->twist.angular.x*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortY(cmd->twist.angular.y*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(cmd->twist.angular.z*100);
+		sendJausMessage(msg, p_control_addr);
 	}
 //  const geometry_msgs::Twist::ConstPtr const_twist(&cmd->twist);
 //  cmdReceived(const_twist);

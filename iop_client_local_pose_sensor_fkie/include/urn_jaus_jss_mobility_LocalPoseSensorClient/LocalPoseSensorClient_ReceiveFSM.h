@@ -30,8 +30,8 @@ along with this program; or you can read the full license at
 #include "urn_jaus_jss_mobility_LocalPoseSensorClient/Messages/MessageSet.h"
 #include "urn_jaus_jss_mobility_LocalPoseSensorClient/InternalEvents/InternalEventsSet.h"
 
-typedef JTS::Receive Receive;
-typedef JTS::Send Send;
+#include "InternalEvents/Receive.h"
+#include "InternalEvents/Send.h"
 
 #include "urn_jaus_jss_core_Transport/Transport_ReceiveFSM.h"
 #include "urn_jaus_jss_core_EventsClient/EventsClient_ReceiveFSM.h"
@@ -45,13 +45,13 @@ typedef JTS::Send Send;
 #include <nav_msgs/Odometry.h>
 
 #include "LocalPoseSensorClient_ReceiveFSM_sm.h"
-#include <iop_ocu_control_layerlib_fkie/OcuControlLayerSlave.h>
+#include <iop_ocu_slavelib_fkie/SlaveHandlerInterface.h>
 
 
 namespace urn_jaus_jss_mobility_LocalPoseSensorClient
 {
 
-class DllExport LocalPoseSensorClient_ReceiveFSM : public JTS::StateMachine
+class DllExport LocalPoseSensorClient_ReceiveFSM : public JTS::StateMachine, public iop::ocu::SlaveHandlerInterface
 {
 public:
 	LocalPoseSensorClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM);
@@ -66,7 +66,10 @@ public:
 
 	/// Guard Methods
 
-
+	/// SlaveHandlerInterface Methods
+	void control_allowed(std::string service_uri, JausAddress component, unsigned char authority);
+	void enable_monitoring_only(std::string service_uri, JausAddress component);
+	void access_deactivated(std::string service_uri, JausAddress component);
 
 	LocalPoseSensorClient_ReceiveFSMContext *context;
 
@@ -87,8 +90,7 @@ protected:
 	ros::Publisher p_pub_pose;
 
 	urn_jaus_jss_mobility_LocalPoseSensorClient::QueryLocalPose p_query_local_pose_msg;
-	OcuControlLayerSlave p_ocu_control_layer_slave;
-	void pAccessStateHandler(JausAddress &address, unsigned char code);
+	JausAddress p_control_addr;
 	void pHandleEventReportLocalPose(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata);
 
 };

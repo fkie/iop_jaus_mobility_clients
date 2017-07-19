@@ -5,7 +5,7 @@ project(iop_client_primitive_driver_fkie)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-             iop_ocu_control_layerlib_fkie
+             iop_ocu_slavelib_fkie
              roscpp)
 iop_init(COMPONENT_ID 133)
 
@@ -16,7 +16,7 @@ iop_init(COMPONENT_ID 133)
 catkin_package(
     LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS
-        iop_ocu_control_layerlib_fkie
+        iop_ocu_slavelib_fkie
 )
 
 ###########

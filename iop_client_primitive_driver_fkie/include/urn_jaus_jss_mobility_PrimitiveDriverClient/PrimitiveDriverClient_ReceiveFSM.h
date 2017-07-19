@@ -31,8 +31,8 @@ along with this program; or you can read the full license at
 #include "urn_jaus_jss_mobility_PrimitiveDriverClient/Messages/MessageSet.h"
 #include "urn_jaus_jss_mobility_PrimitiveDriverClient/InternalEvents/InternalEventsSet.h"
 
-typedef JTS::Receive Receive;
-typedef JTS::Send Send;
+#include "InternalEvents/Receive.h"
+#include "InternalEvents/Send.h"
 
 #include "urn_jaus_jss_core_Transport/Transport_ReceiveFSM.h"
 #include "urn_jaus_jss_core_EventsClient/EventsClient_ReceiveFSM.h"
@@ -46,13 +46,13 @@ typedef JTS::Send Send;
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Int16.h>
-#include <iop_ocu_control_layerlib_fkie/OcuControlLayerSlave.h>
+#include <iop_ocu_slavelib_fkie/SlaveHandlerInterface.h>
 
 
 namespace urn_jaus_jss_mobility_PrimitiveDriverClient
 {
 
-class DllExport PrimitiveDriverClient_ReceiveFSM : public JTS::StateMachine
+class DllExport PrimitiveDriverClient_ReceiveFSM : public JTS::StateMachine, public iop::ocu::SlaveHandlerInterface
 {
 public:
 	PrimitiveDriverClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM);
@@ -67,7 +67,10 @@ public:
 
 	/// Guard Methods
 
-
+	/// SlaveHandlerInterface Methods
+	void control_allowed(std::string service_uri, JausAddress component, unsigned char authority);
+	void enable_monitoring_only(std::string service_uri, JausAddress component);
+	void access_deactivated(std::string service_uri, JausAddress component);
 
 	PrimitiveDriverClient_ReceiveFSMContext *context;
 
@@ -79,7 +82,7 @@ protected:
 	urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM;
 	urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM;
 
-	OcuControlLayerSlave p_ocu_control_layer_slave;
+	JausAddress p_control_addr;
 	ros::NodeHandle p_nh;
 	ros::Subscriber p_cmd_sub;
 	bool p_use_stamped;

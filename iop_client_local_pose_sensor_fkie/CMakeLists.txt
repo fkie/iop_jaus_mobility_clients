@@ -6,7 +6,7 @@ project(iop_client_local_pose_sensor_fkie)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
                 geometry_msgs
-                iop_ocu_control_layerlib_fkie
+                iop_ocu_slavelib_fkie
                 nav_msgs
                 roscpp
                 tf2
@@ -31,7 +31,7 @@ catkin_package(
     LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS
         geometry_msgs
-        iop_ocu_control_layerlib_fkie
+        iop_ocu_slavelib_fkie
         nav_msgs
         tf2
         tf2_ros
