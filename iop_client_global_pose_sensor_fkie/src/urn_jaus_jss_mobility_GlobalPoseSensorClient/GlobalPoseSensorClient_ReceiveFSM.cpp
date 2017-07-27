@@ -24,6 +24,7 @@ along with this program; or you can read the full license at
 #include "urn_jaus_jss_mobility_GlobalPoseSensorClient/GlobalPoseSensorClient_ReceiveFSM.h"
 
 #include <tf/transform_datatypes.h>
+#include <gps_common/conversions.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/Imu.h>
 #include <iop_builder_fkie/timestamp.h>
@@ -51,6 +52,8 @@ GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(urn_jaus_js
 	this->pTransport_ReceiveFSM = pTransport_ReceiveFSM;
 	this->pEventsClient_ReceiveFSM = pEventsClient_ReceiveFSM;
 	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
+	p_tf_frame_world = "world";
+	p_tf_frame_robot = "base_link";
 }
 
 
@@ -68,6 +71,11 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	registerNotification("Receiving_Ready", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving_Ready", "GlobalPoseSensorClient_ReceiveFSM");
 	registerNotification("Receiving", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving", "GlobalPoseSensorClient_ReceiveFSM");
 	ros::NodeHandle pnh;
+	ros::NodeHandle p_pnh("~");
+	p_pnh.param("tf_frame_world", p_tf_frame_world, p_tf_frame_world);
+	ROS_INFO("  tf_frame_world: %s", p_tf_frame_world.c_str());
+	p_pnh.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
+	ROS_INFO("  tf_frame_robot: %s", p_tf_frame_robot.c_str());
 	p_pub_navsatfix = pnh.advertise<sensor_msgs::NavSatFix>("fix", 1, true);
 	p_pub_imu = pnh.advertise<sensor_msgs::Imu>("imu", 1, true);
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
@@ -129,19 +137,39 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 		// get timestamp
 		ReportGlobalPose::Body::GlobalPoseRec::TimeStamp *ts = msg.getBody()->getGlobalPoseRec()->getTimeStamp();
 		iop::Timestamp stamp(ts->getDay(), ts->getHour(), ts->getMinutes(), ts->getSeconds(), ts->getMilliseconds());
-		fix.header.stamp  = stamp.ros_time;
+		fix.header.stamp = stamp.ros_time;
+	} else {
+		fix.header.stamp = ros::Time::now();
 	}
 
 	p_pub_navsatfix.publish(fix);
+	sensor_msgs::Imu imu;
+	tf::Quaternion quat;
 	if (msg.getBody()->getGlobalPoseRec()->isYawValid()) {
-		tf::Quaternion q = tf::createQuaternionFromRPY(msg.getBody()->getGlobalPoseRec()->getRoll(), msg.getBody()->getGlobalPoseRec()->getPitch(), msg.getBody()->getGlobalPoseRec()->getYaw());
-		sensor_msgs::Imu imu;
-		imu.orientation.x = q.x();
-		imu.orientation.y = q.y();
-		imu.orientation.z = q.z();
-		imu.orientation.w = q.w();
+		quat.setRPY(msg.getBody()->getGlobalPoseRec()->getRoll(), msg.getBody()->getGlobalPoseRec()->getPitch(), msg.getBody()->getGlobalPoseRec()->getYaw());
+		imu.orientation.x = quat.x();
+		imu.orientation.y = quat.y();
+		imu.orientation.z = quat.z();
+		imu.orientation.w = quat.w();
 		p_pub_imu.publish(imu);
 	}
+
+	tf::StampedTransform transform;
+	tf::Transform btTrans;
+	double northing, easting;
+	std::string zone;
+	gps_common::LLtoUTM(fix.latitude, fix.longitude, northing, easting, zone);
+	tf::Vector3 translation(easting, northing, 0.0);
+	btTrans = tf::Transform(quat, translation);
+	transform.stamp_ = fix.header.stamp;
+	transform.setData(btTrans);
+	transform.frame_id_ = this->p_tf_frame_world;
+	transform.child_frame_id_ = this->p_tf_frame_robot;
+	ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s", this->p_tf_frame_world.c_str(), this->p_tf_frame_robot.c_str());
+	if (! transform.child_frame_id_.empty()) {
+		p_tf_broadcaster.sendTransform(transform);
+	}
+
 }
 
 

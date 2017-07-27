@@ -5,9 +5,11 @@ project(iop_client_global_pose_sensor_fkie)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+                gps_common
                 iop_ocu_slavelib_fkie
                 roscpp
                 sensor_msgs
+                tf
                 )
 
 ## System dependencies are found with CMake's conventions
@@ -29,6 +31,7 @@ catkin_package(
     CATKIN_DEPENDS
         iop_ocu_slavelib_fkie
         sensor_msgs
+        tf
     DEPENDS Boost
 )
 

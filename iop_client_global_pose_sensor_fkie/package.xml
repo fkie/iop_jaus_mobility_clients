@@ -9,14 +9,17 @@
   <url type="website">https://github.com/fkie/iop_jaus_mobility_clients</url>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>gps_common</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>iop_ocu_slavelib_fkie</build_depend>
   <build_depend>sensor_msgs</build_depend>
+  <build_depend>tf</build_depend>
   <run_depend>boost</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>iop_component_fkie</run_depend>
   <run_depend>iop_ocu_slavelib_fkie</run_depend>
   <run_depend>sensor_msgs</run_depend>
+  <run_depend>tf</run_depend>
 
   <export>
     <iop_component_fkie plugin="${prefix}/plugin_iop.xml" />

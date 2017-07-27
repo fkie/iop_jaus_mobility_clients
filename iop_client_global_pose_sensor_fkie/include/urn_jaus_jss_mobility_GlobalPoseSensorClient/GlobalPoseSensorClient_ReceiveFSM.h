@@ -41,6 +41,7 @@ along with this program; or you can read the full license at
 
 
 #include <ros/ros.h>
+#include <tf/transform_broadcaster.h>
 
 #include "GlobalPoseSensorClient_ReceiveFSM_sm.h"
 #include <iop_ocu_slavelib_fkie/SlaveHandlerInterface.h>
@@ -77,6 +78,10 @@ protected:
 	urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM;
 	urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM;
 	urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM;
+	std::string p_tf_frame_world;
+	std::string p_tf_frame_robot;
+	tf::TransformBroadcaster p_tf_broadcaster;
+
 	ros::Publisher p_pub_navsatfix;
 	ros::Publisher p_pub_imu;
 
