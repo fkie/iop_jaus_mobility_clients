@@ -39,7 +39,7 @@ along with this program; or you can read the full license at
 #include "urn_jaus_jss_core_AccessControlClient/AccessControlClient_ReceiveFSM.h"
 
 #include <ros/ros.h>
-#include <tf2_ros/transform_broadcaster.h>
+#include <tf/transform_broadcaster.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <nav_msgs/Odometry.h>
@@ -82,10 +82,9 @@ protected:
 
 	std::string p_tf_frame_odom;
 	std::string p_tf_frame_robot;
+	bool p_send_inverse_trafo;
 
-	ros::NodeHandle p_nh;
-	ros::NodeHandle p_pnh;
-	tf2_ros::TransformBroadcaster p_tf_broadcaster;
+	tf::TransformBroadcaster p_tf_broadcaster;
 	ros::Publisher p_pub_odom;
 	ros::Publisher p_pub_pose;
 

@@ -9,8 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
                 iop_ocu_slavelib_fkie
                 nav_msgs
                 roscpp
-                tf2
-                tf2_ros
+                tf
                 )
 
 ## System dependencies are found with CMake's conventions
@@ -33,8 +32,7 @@ catkin_package(
         geometry_msgs
         iop_ocu_slavelib_fkie
         nav_msgs
-        tf2
-        tf2_ros
+        tf
     DEPENDS Boost
 )
 

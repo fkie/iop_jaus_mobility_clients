@@ -50,7 +50,7 @@ LocalPoseSensorClient_ReceiveFSM::LocalPoseSensorClient_ReceiveFSM(urn_jaus_jss_
 	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
 	p_tf_frame_odom = "odom";
 	p_tf_frame_robot = "base_link";
-	p_pnh = ros::NodeHandle("~");
+	p_send_inverse_trafo = true;
 }
 
 
@@ -68,10 +68,14 @@ void LocalPoseSensorClient_ReceiveFSM::setupNotifications()
 	registerNotification("Receiving_Ready", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving_Ready", "LocalPoseSensorClient_ReceiveFSM");
 	registerNotification("Receiving", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving", "LocalPoseSensorClient_ReceiveFSM");
 
+	ros::NodeHandle p_nh;
+	ros::NodeHandle p_pnh("~");
 	p_pnh.param("tf_frame_odom", p_tf_frame_odom, p_tf_frame_odom);
 	ROS_INFO("  tf_frame_odom: %s", p_tf_frame_odom.c_str());
 	p_pnh.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
 	ROS_INFO("  tf_frame_robot: %s", p_tf_frame_robot.c_str());
+	p_pnh.param("local_pose/send_inverse_trafo", p_send_inverse_trafo, p_send_inverse_trafo);
+	ROS_INFO("  local_pose/send_inverse_trafo: %d", (int)p_send_inverse_trafo);
 	p_pub_pose = p_nh.advertise<geometry_msgs::PoseStamped>("pose", 1, true);
 	p_pub_odom = p_nh.advertise<nav_msgs::Odometry>("odom", 1, true);
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
@@ -120,48 +124,77 @@ void LocalPoseSensorClient_ReceiveFSM::handleReportLocalPoseAction(ReportLocalPo
 {
 	/// Insert User Code HERE
 	try {
-		geometry_msgs::TransformStamped tf_msg;
+		// send quaternion
+		tf::StampedTransform transform;
+		tf::Transform btTrans;
+		tf::Vector3 translation;
+		tf::Quaternion quat;
 		ReportLocalPose::Body::LocalPoseRec *pose = msg.getBody()->getLocalPoseRec();
-		tf_msg.transform.translation.x = pose->getX();
-		tf_msg.transform.translation.y = pose->getY();
-		tf_msg.transform.translation.z = pose->getZ();
-		double roll = pose->getRoll();
-		double pitch = pose->getPitch();
-		double yaw = pose->getYaw();
-		tf::Quaternion q = tf::createQuaternionFromRPY(roll, pitch, yaw);
-		tf_msg.transform.rotation.x = q.x();
-		tf_msg.transform.rotation.y = q.y();
-		tf_msg.transform.rotation.z = q.z();
-		tf_msg.transform.rotation.w = q.w();
+		translation = tf::Vector3(pose->getX(), pose->getY(), pose->getZ());
+		quat.setRPY(pose->getRoll(), pose->getPitch(), pose->getYaw());
 		ReportLocalPose::Body::LocalPoseRec::TimeStamp *ts = pose->getTimeStamp();
 		iop::Timestamp stamp(ts->getDay(), ts->getHour(), ts->getMinutes(), ts->getSeconds(), ts->getMilliseconds());
-		tf_msg.header.stamp = stamp.ros_time;
-		tf_msg.header.frame_id = this->p_tf_frame_odom;
-		tf_msg.child_frame_id = this->p_tf_frame_robot;
-		ROS_DEBUG_NAMED("RangeSensorClient", "tf %s -> %s", this->p_tf_frame_robot.c_str(), this->p_tf_frame_robot.c_str());
-		if (! tf_msg.child_frame_id.empty()) {
-			p_tf_broadcaster.sendTransform(tf_msg);
+		btTrans = tf::Transform(quat, translation);
+		transform.stamp_ = stamp.ros_time;
+		if (!p_send_inverse_trafo) {
+			transform.setData(btTrans);
+			transform.frame_id_ = this->p_tf_frame_odom;
+			transform.child_frame_id_ = this->p_tf_frame_robot;
+			ROS_DEBUG_NAMED("LocalPoseSensorClient", "tf %s -> %s", this->p_tf_frame_odom.c_str(), this->p_tf_frame_robot.c_str());
+		} else {
+			transform.setData(btTrans.inverse());
+			transform.frame_id_ = this->p_tf_frame_robot;
+			transform.child_frame_id_ = this->p_tf_frame_odom;
+			ROS_DEBUG_NAMED("LocalPoseSensorClient", "tf %s i-> %s", this->p_tf_frame_robot.c_str(), this->p_tf_frame_odom.c_str());
 		}
+		if (! transform.child_frame_id_.empty()) {
+			p_tf_broadcaster.sendTransform(transform);
+		}
+
+//		geometry_msgs::TransformStamped tf_msg;
+//		ReportLocalPose::Body::LocalPoseRec *pose = msg.getBody()->getLocalPoseRec();
+//		tf_msg.transform.translation.x = pose->getX();
+//		tf_msg.transform.translation.y = pose->getY();
+//		tf_msg.transform.translation.z = pose->getZ();
+//		double roll = pose->getRoll();
+//		double pitch = pose->getPitch();
+//		double yaw = pose->getYaw();
+//		tf::Quaternion q = tf::createQuaternionFromRPY(roll, pitch, yaw);
+//		tf_msg.transform.rotation.x = q.x();
+//		tf_msg.transform.rotation.y = q.y();
+//		tf_msg.transform.rotation.z = q.z();
+//		tf_msg.transform.rotation.w = q.w();
+//		ReportLocalPose::Body::LocalPoseRec::TimeStamp *ts = pose->getTimeStamp();
+//		iop::Timestamp stamp(ts->getDay(), ts->getHour(), ts->getMinutes(), ts->getSeconds(), ts->getMilliseconds());
+//		tf_msg.header.stamp = stamp.ros_time;
+//		tf_msg.header.frame_id = this->p_tf_frame_odom;
+//		tf_msg.child_frame_id = this->p_tf_frame_robot;
+//		ROS_DEBUG_NAMED("RangeSensorClient", "tf %s -> %s", this->p_tf_frame_robot.c_str(), this->p_tf_frame_robot.c_str());
+//		if (! tf_msg.child_frame_id.empty()) {
+//			p_tf_broadcaster.sendTransform(tf_msg);
+//		}
+		// send pose stamped
 		geometry_msgs::PoseStamped ros_pose;
 		ros_pose.pose.position.x = pose->getX();
 		ros_pose.pose.position.y = pose->getY();
 		ros_pose.pose.position.z = pose->getZ();
-		ros_pose.pose.orientation.x = q.x();
-		ros_pose.pose.orientation.y = q.y();
-		ros_pose.pose.orientation.z = q.z();
-		ros_pose.pose.orientation.w = q.w();
+		ros_pose.pose.orientation.x = quat.x();
+		ros_pose.pose.orientation.y = quat.y();
+		ros_pose.pose.orientation.z = quat.z();
+		ros_pose.pose.orientation.w = quat.w();
 		ros_pose.header.stamp = stamp.ros_time;
 		ros_pose.header.frame_id = this->p_tf_frame_odom;
 		p_pub_pose.publish(ros_pose);
 
+		// send odometry
 		nav_msgs::Odometry ros_odom;
 		ros_odom.pose.pose.position.x = pose->getX();
 		ros_odom.pose.pose.position.y = pose->getY();
 		ros_odom.pose.pose.position.z = pose->getZ();
-		ros_odom.pose.pose.orientation.x = q.x();
-		ros_odom.pose.pose.orientation.y = q.y();
-		ros_odom.pose.pose.orientation.z = q.z();
-		ros_odom.pose.pose.orientation.w = q.w();
+		ros_odom.pose.pose.orientation.x = quat.x();
+		ros_odom.pose.pose.orientation.y = quat.y();
+		ros_odom.pose.pose.orientation.z = quat.z();
+		ros_odom.pose.pose.orientation.w = quat.w();
 		ros_odom.header.stamp = stamp.ros_time;
 		ros_odom.header.frame_id = this->p_tf_frame_odom;
 		p_pub_odom.publish(ros_odom);
