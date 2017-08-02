@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package>
+  <name>iop_client_global_waypoint_driver_fkie</name>
+  <version>1.1.0</version>
+  <description>
+      The Global Waypoint Driver Client allows control of the Global Waypoint Driver service within the ROS/IOP Bridge.
+  </description>
+
+  <maintainer email="alexander.tiderko@fkie.fraunhofer.de">Alexander Tiderko</maintainer>
+  <license>GPLv2</license>
+  <url type="website">https://github.com/fkie/iop_jaus_mobility_clients</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>gps_common</build_depend>
+  <build_depend>iop_ocu_slavelib_fkie</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>tf</build_depend>
+  <run_depend>iop_component_fkie</run_depend>
+  <run_depend>iop_ocu_slavelib_fkie</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>tf</run_depend>
+  
+  <export>
+    <iop_component_fkie plugin="${prefix}/plugin_iop.xml" />
+  </export>
+  
+</package>
