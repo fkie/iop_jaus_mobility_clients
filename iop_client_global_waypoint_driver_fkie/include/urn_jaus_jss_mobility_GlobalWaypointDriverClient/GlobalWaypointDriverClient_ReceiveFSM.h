@@ -68,12 +68,8 @@ protected:
 	JausAddress p_control_addr;
 	ros::NodeHandle p_nh;
 	ros::NodeHandle p_pnh;
-	message_filters::Subscriber<nav_msgs::Path> p_sub_path;
-	tf::MessageFilter<nav_msgs::Path> * tf_filter_path;
-	message_filters::Subscriber<geometry_msgs::PoseStamped> p_sub_pose;
-	tf::MessageFilter<geometry_msgs::PoseStamped> * tf_filter_pose;
-//	ros::Subscriber p_sub_path;
-//	ros::Subscriber p_sub_pose;
+	ros::Subscriber p_sub_path;
+	ros::Subscriber p_sub_pose;
 	ros::Subscriber p_sub_speed;
 	ros::Publisher p_pub_path;
 	float p_travel_speed;

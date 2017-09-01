@@ -29,10 +29,8 @@ GlobalWaypointDriverClient_ReceiveFSM::GlobalWaypointDriverClient_ReceiveFSM(urn
 	this->pEventsClient_ReceiveFSM = pEventsClient_ReceiveFSM;
 	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
 	this->pManagementClient_ReceiveFSM = pManagementClient_ReceiveFSM;
-	tf_filter_path = NULL;
-	tf_filter_pose = NULL;
 	p_pnh = ros::NodeHandle("~");
-	p_travel_speed = 0.0;
+	p_travel_speed = 1.0;
 	p_tf_frame_world = "/world";
 	p_utm_zone = "32U";
 	p_wp_tolerance = 1.0;
@@ -52,6 +50,8 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupNotifications()
 	registerNotification("Receiving_Ready", pManagementClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ManagementClient_ReceiveFSM_Receiving_Ready", "GlobalWaypointDriverClient_ReceiveFSM");
 	registerNotification("Receiving", pManagementClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ManagementClient_ReceiveFSM_Receiving", "GlobalWaypointDriverClient_ReceiveFSM");
 
+	p_pnh.param("travel_speed", p_travel_speed, p_travel_speed);
+	ROS_INFO_NAMED("GlobalWaypointDriverClient", "  travel_speed: %.2f", p_travel_speed);
 	p_pnh.param("tf_frame_world", p_tf_frame_world, p_tf_frame_world);
 	ROS_INFO_NAMED("GlobalWaypointDriverClient", "  tf_frame_world: %s", p_tf_frame_world.c_str());
 	p_pnh.param("utm_zone", p_utm_zone, p_utm_zone);
@@ -59,13 +59,8 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupNotifications()
 	p_pnh.param("waypoint_tolerance", p_wp_tolerance, p_wp_tolerance);
 	//ROS_INFO_NAMED("GlobalWaypointDriverClient", "  waypoint_tolerance: %.2f", p_wp_tolerance);
 	//create ROS subscriber
-	p_sub_path.subscribe(p_nh, "cmd_path", 10);
-	tf_filter_path = new tf::MessageFilter<nav_msgs::Path>(p_sub_path, tfListener, p_tf_frame_world, 10);
-	tf_filter_path->registerCallback( boost::bind(&GlobalWaypointDriverClient_ReceiveFSM::pCmdPath, this, _1) );
-	p_sub_pose.subscribe(p_nh, "cmd_pose", 10);
-	tf_filter_pose = new tf::MessageFilter<geometry_msgs::PoseStamped>(p_sub_pose, tfListener, p_tf_frame_world, 10);
-	tf_filter_pose->registerCallback( boost::bind(&GlobalWaypointDriverClient_ReceiveFSM::pCmdPose, this, _1) );
-
+	p_sub_path = p_nh.subscribe<nav_msgs::Path>("cmd_path", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
+	p_sub_pose = p_nh.subscribe<geometry_msgs::PoseStamped>("cmd_pose", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPose, this);
 	p_sub_speed = p_nh.subscribe<std_msgs::Float32>("cmd_speed", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this);
 	p_pub_path = p_nh.advertise<nav_msgs::Path>("global_waypoints", 5, true);
 	// initialize the control layer, which handles the access control staff
@@ -175,22 +170,25 @@ void GlobalWaypointDriverClient_ReceiveFSM::handleReportTravelSpeedAction(Report
 	uint8_t node_id = transportData.getSourceID()->getNodeID();
 	uint8_t component_id = transportData.getSourceID()->getComponentID();
 	JausAddress sender(subsystem_id, node_id, component_id);
-	double speed = msg.getBody()->getTravelSpeedRec()->getSpeed();
-	ROS_DEBUG_NAMED("GlobalWaypointDriverClient", "currentReportTravelSpeedAction from %d.%d.%d, speed: %.2f", subsystem_id, node_id, component_id, speed);
+	p_travel_speed = msg.getBody()->getTravelSpeedRec()->getSpeed();
+	ROS_DEBUG_NAMED("GlobalWaypointDriverClient", "currentReportTravelSpeedAction from %d.%d.%d, speed: %.2f", subsystem_id, node_id, component_id, p_travel_speed);
 }
 
 
 void GlobalWaypointDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::Path::ConstPtr& msg)
 {
+	std::cout << "CMD PATH" << std::endl;
 	if (p_control_addr.get() != 0) {
 		SetGlobalWaypoint cmd;
 		geometry_msgs::PointStamped point_out;
+		bool transformed = false;
 		for (unsigned int i = 0; i < msg->poses.size(); i++) {
 			try {
 				geometry_msgs::PoseStamped pose_in = msg->poses[i];
 				if (pose_in.header.frame_id.empty()) {
 					pose_in.header = msg->header;
 				}
+				tfListener.waitForTransform(p_tf_frame_world, pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(0.3));
 				geometry_msgs::PoseStamped pose_out;
 				tfListener.transformPose(p_tf_frame_world, pose_in, pose_out);
 				double lat, lon = 0;
@@ -206,14 +204,24 @@ void GlobalWaypointDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::Path::Const
 					cmd.getBody()->getGlobalWaypointRec()->setPitch(pitch);
 					cmd.getBody()->getGlobalWaypointRec()->setYaw(yaw);
 				}
+				transformed = true;
 			} catch (tf::TransformException &ex) {
 				printf ("Failure %s\n", ex.what()); //Print exception which was caught
 			}
 		}
-		ROS_INFO_NAMED("GlobalWaypointDriverClient", "send Waypoint from Path [lat: %.2f, lon: %.2f] to %d.%d.%d",
-				cmd.getBody()->getGlobalWaypointRec()->getLatitude(), cmd.getBody()->getGlobalWaypointRec()->getLongitude(),
-				p_control_addr.getSubsystemID(), p_control_addr.getNodeID(), p_control_addr.getComponentID());
-		sendJausMessage(cmd, p_control_addr);
+		if (transformed || msg->poses.size() == 0) {
+			ROS_INFO_NAMED("GlobalWaypointDriverClient", "send Waypoint from Path [lat: %.2f, lon: %.2f] to %d.%d.%d",
+					cmd.getBody()->getGlobalWaypointRec()->getLatitude(), cmd.getBody()->getGlobalWaypointRec()->getLongitude(),
+					p_control_addr.getSubsystemID(), p_control_addr.getNodeID(), p_control_addr.getComponentID());
+			sendJausMessage(cmd, p_control_addr);
+			SetTravelSpeed cmd_speed;
+			float speed = p_travel_speed;
+			if (msg->poses.size() == 0) {
+				speed = 0;
+			}
+			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
+			sendJausMessage(cmd_speed, p_control_addr);
+		}
 	}
 }
 
@@ -224,6 +232,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::PoseSt
 		geometry_msgs::PointStamped point_out;
 		try {
 			geometry_msgs::PoseStamped pose_in = *msg;
+			tfListener.waitForTransform(p_tf_frame_world, pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(0.3));
 			geometry_msgs::PoseStamped pose_out;
 			tfListener.transformPose(p_tf_frame_world, pose_in, pose_out);
 			double lat, lon = 0;
@@ -246,14 +255,18 @@ void GlobalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::PoseSt
 				cmd.getBody()->getGlobalWaypointRec()->getLatitude(), cmd.getBody()->getGlobalWaypointRec()->getLongitude(),
 				p_control_addr.getSubsystemID(), p_control_addr.getNodeID(), p_control_addr.getComponentID());
 		sendJausMessage(cmd, p_control_addr);
+		SetTravelSpeed cmd_speed;
+		cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(p_travel_speed);
+		sendJausMessage(cmd_speed, p_control_addr);
 	}
 }
 
 void GlobalWaypointDriverClient_ReceiveFSM::pCmdSpeed(const std_msgs::Float32::ConstPtr& msg)
 {
 	if (p_control_addr.get() != 0) {
+		p_travel_speed = msg->data;
 		SetTravelSpeed cmd;
-		cmd.getBody()->getTravelSpeedRec()->setSpeed(msg->data);
+		cmd.getBody()->getTravelSpeedRec()->setSpeed(p_travel_speed);
 		sendJausMessage(cmd, p_control_addr);
 	}
 }
