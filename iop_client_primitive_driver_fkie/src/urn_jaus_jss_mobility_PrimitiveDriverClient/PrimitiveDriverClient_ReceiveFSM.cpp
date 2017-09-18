@@ -49,6 +49,8 @@ PrimitiveDriverClient_ReceiveFSM::PrimitiveDriverClient_ReceiveFSM(urn_jaus_jss_
 	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
 	this->pManagementClient_ReceiveFSM = pManagementClient_ReceiveFSM;
 	p_use_stamped = true;
+	p_invert_yaw = true;
+	p_invert_yaw_factor = -1.0;
 }
 
 
@@ -67,6 +69,8 @@ void PrimitiveDriverClient_ReceiveFSM::setupNotifications()
 
 	ros::NodeHandle pnh_("~");
 	pnh_.param("use_stamped", p_use_stamped, true);
+	pnh_.param("invert_yaw", p_invert_yaw, true);
+	if (!p_invert_yaw) p_invert_yaw_factor = 1.0;
 	ROS_INFO_STREAM("[ClientPrimitiveDriver ROS param] use_stamped: " << p_use_stamped);
 	//create ROS subscriber
 	if (p_use_stamped) {
@@ -113,7 +117,7 @@ void PrimitiveDriverClient_ReceiveFSM::cmdReceived(const geometry_msgs::Twist::C
 		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortZ(cmd->linear.z*100);
 		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortX(cmd->angular.x*100);
 		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortY(cmd->angular.y*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(cmd->angular.z*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(cmd->angular.z*100*p_invert_yaw_factor);
 		sendJausMessage(msg, p_control_addr);
 	}
 
@@ -129,7 +133,7 @@ void PrimitiveDriverClient_ReceiveFSM::cmdStampedReceived(const geometry_msgs::T
 		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortZ(cmd->twist.linear.z*100);
 		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortX(cmd->twist.angular.x*100);
 		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortY(cmd->twist.angular.y*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(cmd->twist.angular.z*100);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(cmd->twist.angular.z*100*p_invert_yaw_factor);
 		sendJausMessage(msg, p_control_addr);
 	}
 //  const geometry_msgs::Twist::ConstPtr const_twist(&cmd->twist);

@@ -86,6 +86,8 @@ protected:
 	ros::NodeHandle p_nh;
 	ros::Subscriber p_cmd_sub;
 	bool p_use_stamped;
+	bool p_invert_yaw;
+	double p_invert_yaw_factor;
 
 	void cmdReceived(const geometry_msgs::Twist::ConstPtr& joy);
 	void cmdStampedReceived(const geometry_msgs::TwistStamped::ConstPtr& joy);

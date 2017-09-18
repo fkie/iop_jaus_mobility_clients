@@ -51,6 +51,7 @@ LocalPoseSensorClient_ReceiveFSM::LocalPoseSensorClient_ReceiveFSM(urn_jaus_jss_
 	p_tf_frame_odom = "odom";
 	p_tf_frame_robot = "base_link";
 	p_send_inverse_trafo = true;
+	p_query_local_pose_msg.getBody()->getQueryLocalPoseRec()->setPresenceVector(65535);
 }
 
 
@@ -88,7 +89,7 @@ void LocalPoseSensorClient_ReceiveFSM::control_allowed(std::string service_uri, 
 		p_control_addr = component;
 		ROS_INFO_NAMED("LocalPoseSensorClient", "create event to get local pose from %d.%d.%d",
 				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->create_event(&LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose, this, component, p_query_local_pose_msg, 10.0, 1);
+		pEventsClient_ReceiveFSM->create_event(&LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose, this, component, p_query_local_pose_msg, 10.0, 0);
 	} else {
 		ROS_WARN_STREAM("[LocalPoseSensorClient] unexpected control allowed for " << service_uri << " received, ignored!");
 	}
@@ -98,7 +99,7 @@ void LocalPoseSensorClient_ReceiveFSM::enable_monitoring_only(std::string servic
 {
 	ROS_INFO_NAMED("LocalPoseSensorClient", "create monitor event to get local pose from %d.%d.%d",
 			component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-	pEventsClient_ReceiveFSM->create_event(&LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose, this, component, p_query_local_pose_msg, 10.0, 1);
+	pEventsClient_ReceiveFSM->create_event(&LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose, this, component, p_query_local_pose_msg, 10.0, 0);
 }
 
 void LocalPoseSensorClient_ReceiveFSM::access_deactivated(std::string service_uri, JausAddress component)
