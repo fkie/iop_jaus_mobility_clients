@@ -51,6 +51,8 @@ public:
 	void control_allowed(std::string service_uri, JausAddress component, unsigned char authority);
 	void enable_monitoring_only(std::string service_uri, JausAddress component);
 	void access_deactivated(std::string service_uri, JausAddress component);
+	void create_events(std::string service_uri, JausAddress component, bool by_query=false);
+	void cancel_events(std::string service_uri, JausAddress component, bool by_query=false);
 	/// Guard Methods
 
 
@@ -65,9 +67,10 @@ protected:
 	urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM;
 	urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM;
 
-	JausAddress p_control_addr;
+	JausAddress p_remote_addr;
 	ros::NodeHandle p_nh;
 	ros::NodeHandle p_pnh;
+	ros::Timer p_query_timer;
 	ros::Subscriber p_sub_path;
 	ros::Subscriber p_sub_pose;
 	ros::Subscriber p_sub_speed;
@@ -78,12 +81,13 @@ protected:
 	std::string p_utm_zone;
 	QueryGlobalWaypoint p_query_global_waypoint_msg;
 	tf::TransformListener tfListener;
+	bool p_has_access;
 
 	void pCmdPath(const nav_msgs::Path::ConstPtr& msg);
 	void pCmdPose(const geometry_msgs::PoseStamped::ConstPtr& msg);
 	void pCmdSpeed(const std_msgs::Float32::ConstPtr& msg);
 	void pHandleReportGlobalWaypoint(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata);
-
+	void pQueryCallback(const ros::TimerEvent& event);
 };
 
 };

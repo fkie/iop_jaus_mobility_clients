@@ -52,6 +52,7 @@ LocalPoseSensorClient_ReceiveFSM::LocalPoseSensorClient_ReceiveFSM(urn_jaus_jss_
 	p_tf_frame_robot = "base_link";
 	p_send_inverse_trafo = true;
 	p_query_local_pose_msg.getBody()->getQueryLocalPoseRec()->setPresenceVector(65535);
+	p_has_access = false;
 }
 
 
@@ -69,7 +70,6 @@ void LocalPoseSensorClient_ReceiveFSM::setupNotifications()
 	registerNotification("Receiving_Ready", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving_Ready", "LocalPoseSensorClient_ReceiveFSM");
 	registerNotification("Receiving", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving", "LocalPoseSensorClient_ReceiveFSM");
 
-	ros::NodeHandle p_nh;
 	ros::NodeHandle p_pnh("~");
 	p_pnh.param("tf_frame_odom", p_tf_frame_odom, p_tf_frame_odom);
 	ROS_INFO("  tf_frame_odom: %s", p_tf_frame_odom.c_str());
@@ -86,10 +86,8 @@ void LocalPoseSensorClient_ReceiveFSM::setupNotifications()
 void LocalPoseSensorClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)
 {
 	if (service_uri.compare("urn:jaus:jss:mobility:LocalPoseSensor") == 0) {
-		p_control_addr = component;
-		ROS_INFO_NAMED("LocalPoseSensorClient", "create event to get local pose from %d.%d.%d",
-				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->create_event(&LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose, this, component, p_query_local_pose_msg, 10.0, 0);
+		p_remote_addr = component;
+		p_has_access = true;
 	} else {
 		ROS_WARN_STREAM("[LocalPoseSensorClient] unexpected control allowed for " << service_uri << " received, ignored!");
 	}
@@ -97,17 +95,44 @@ void LocalPoseSensorClient_ReceiveFSM::control_allowed(std::string service_uri, 
 
 void LocalPoseSensorClient_ReceiveFSM::enable_monitoring_only(std::string service_uri, JausAddress component)
 {
-	ROS_INFO_NAMED("LocalPoseSensorClient", "create monitor event to get local pose from %d.%d.%d",
-			component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-	pEventsClient_ReceiveFSM->create_event(&LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose, this, component, p_query_local_pose_msg, 10.0, 0);
+	p_remote_addr = component;
 }
 
 void LocalPoseSensorClient_ReceiveFSM::access_deactivated(std::string service_uri, JausAddress component)
 {
-	p_control_addr = JausAddress(0);
-	ROS_INFO_NAMED("LocalPoseSensorClient", "cancel event for local pose by %d.%d.%d",
-			component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-	pEventsClient_ReceiveFSM->cancel_event(component, p_query_local_pose_msg);
+	p_has_access = false;
+	p_remote_addr = JausAddress(0);
+}
+
+void LocalPoseSensorClient_ReceiveFSM::create_events(std::string service_uri, JausAddress component, bool by_query)
+{
+	if (by_query) {
+		ROS_INFO_NAMED("LocalPoseSensorClient", "create QUERY timer to get local pose from %d.%d.%d",
+				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
+		p_query_timer = p_nh.createTimer(ros::Duration(0.1), &LocalPoseSensorClient_ReceiveFSM::pQueryCallback, this);
+	} else {
+		ROS_INFO_NAMED("LocalPoseSensorClient", "create EVENT to get local pose from %d.%d.%d",
+				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
+		pEventsClient_ReceiveFSM->create_event(&LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose, this, component, p_query_local_pose_msg, 10.0, 0);
+	}
+}
+
+void LocalPoseSensorClient_ReceiveFSM::cancel_events(std::string service_uri, JausAddress component, bool by_query)
+{
+	if (by_query) {
+		p_query_timer.stop();
+	} else {
+		ROS_INFO_NAMED("LocalPoseSensorClient", "cancel event for local pose by %d.%d.%d",
+				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
+		pEventsClient_ReceiveFSM->cancel_event(component, p_query_local_pose_msg);
+	}
+}
+
+void LocalPoseSensorClient_ReceiveFSM::pQueryCallback(const ros::TimerEvent& event)
+{
+	if (p_remote_addr.get() != 0) {
+		sendJausMessage(p_query_local_pose_msg, p_remote_addr);
+	}
 }
 
 void LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata)

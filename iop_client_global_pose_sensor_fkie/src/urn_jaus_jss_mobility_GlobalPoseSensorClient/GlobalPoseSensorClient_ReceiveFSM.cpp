@@ -55,6 +55,7 @@ GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(urn_jaus_js
 	p_tf_frame_world = "world";
 	p_tf_frame_robot = "base_link";
 	p_query_global_pose_msg.getBody()->getQueryGlobalPoseRec()->setPresenceVector(65535);
+	p_has_access = false;
 }
 
 
@@ -71,14 +72,13 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	registerNotification("Receiving_Ready_NotControlled", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving_Ready", "GlobalPoseSensorClient_ReceiveFSM");
 	registerNotification("Receiving_Ready", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving_Ready", "GlobalPoseSensorClient_ReceiveFSM");
 	registerNotification("Receiving", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving", "GlobalPoseSensorClient_ReceiveFSM");
-	ros::NodeHandle pnh;
 	ros::NodeHandle p_pnh("~");
 	p_pnh.param("tf_frame_world", p_tf_frame_world, p_tf_frame_world);
 	ROS_INFO("  tf_frame_world: %s", p_tf_frame_world.c_str());
 	p_pnh.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
 	ROS_INFO("  tf_frame_robot: %s", p_tf_frame_robot.c_str());
-	p_pub_navsatfix = pnh.advertise<sensor_msgs::NavSatFix>("fix", 1, true);
-	p_pub_imu = pnh.advertise<sensor_msgs::Imu>("imu", 1, true);
+	p_pub_navsatfix = p_nh.advertise<sensor_msgs::NavSatFix>("fix", 1, true);
+	p_pub_imu = p_nh.advertise<sensor_msgs::Imu>("imu", 1, true);
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
 	slave.add_supported_service(*this, "urn:jaus:jss:mobility:GlobalPoseSensor", 1, 0);
 }
@@ -86,28 +86,53 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 void GlobalPoseSensorClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)
 {
 	if (service_uri.compare("urn:jaus:jss:mobility:GlobalPoseSensor") == 0) {
-		p_control_addr = component;
-		ROS_INFO_NAMED("LocalPoseSensorClient", "create event to get global pose from %d.%d.%d",
-				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->create_event(&GlobalPoseSensorClient_ReceiveFSM::pHandleEventReportGlobalPose, this, component, p_query_global_pose_msg, 10.0, 1);
+		p_remote_addr = component;
+		p_has_access = true;
 	} else {
-		ROS_WARN_STREAM("[LocalPoseSensorClient] unexpected control allowed for " << service_uri << " received, ignored!");
+		ROS_WARN_STREAM("[GlobalPoseSensorClient] unexpected control allowed for " << service_uri << " received, ignored!");
 	}
 }
 
 void GlobalPoseSensorClient_ReceiveFSM::enable_monitoring_only(std::string service_uri, JausAddress component)
 {
-	ROS_INFO_NAMED("LocalPoseSensorClient", "create monitor event to get global pose from %d.%d.%d",
-			component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-	pEventsClient_ReceiveFSM->create_event(&GlobalPoseSensorClient_ReceiveFSM::pHandleEventReportGlobalPose, this, component, p_query_global_pose_msg, 10.0, 1);
+	p_remote_addr = component;
 }
 
 void GlobalPoseSensorClient_ReceiveFSM::access_deactivated(std::string service_uri, JausAddress component)
 {
-	p_control_addr = JausAddress(0);
-	ROS_INFO_NAMED("LocalPoseSensorClient", "cancel event for global pose by %d.%d.%d",
-			component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-	pEventsClient_ReceiveFSM->cancel_event(component, p_query_global_pose_msg);
+	p_has_access = false;
+	p_remote_addr = JausAddress(0);
+}
+
+void GlobalPoseSensorClient_ReceiveFSM::create_events(std::string service_uri, JausAddress component, bool by_query)
+{
+	if (by_query) {
+		ROS_INFO_NAMED("GlobalPoseSensorClient", "create QUERY timer to get global pose from %d.%d.%d",
+				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
+		p_query_timer = p_nh.createTimer(ros::Duration(0.1), &GlobalPoseSensorClient_ReceiveFSM::pQueryCallback, this);
+	} else {
+		ROS_INFO_NAMED("GlobalPoseSensorClient", "create EVENT to get global pose from %d.%d.%d",
+				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
+		pEventsClient_ReceiveFSM->create_event(&GlobalPoseSensorClient_ReceiveFSM::pHandleEventReportGlobalPose, this, component, p_query_global_pose_msg, 10.0, 1);
+	}
+}
+
+void GlobalPoseSensorClient_ReceiveFSM::cancel_events(std::string service_uri, JausAddress component, bool by_query)
+{
+	if (by_query) {
+		p_query_timer.stop();
+	} else {
+		ROS_INFO_NAMED("GlobalPoseSensorClient", "cancel EVENT for global pose by %d.%d.%d",
+				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
+		pEventsClient_ReceiveFSM->cancel_event(component, p_query_global_pose_msg);
+	}
+}
+
+void GlobalPoseSensorClient_ReceiveFSM::pQueryCallback(const ros::TimerEvent& event)
+{
+	if (p_remote_addr.get() != 0) {
+		sendJausMessage(p_query_global_pose_msg, p_remote_addr);
+	}
 }
 
 void GlobalPoseSensorClient_ReceiveFSM::pHandleEventReportGlobalPose(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata)

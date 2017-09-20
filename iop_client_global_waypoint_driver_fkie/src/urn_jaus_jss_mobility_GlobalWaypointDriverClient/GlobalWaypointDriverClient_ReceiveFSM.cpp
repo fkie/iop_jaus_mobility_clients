@@ -34,6 +34,7 @@ GlobalWaypointDriverClient_ReceiveFSM::GlobalWaypointDriverClient_ReceiveFSM(urn
 	p_tf_frame_world = "/world";
 	p_utm_zone = "32U";
 	p_wp_tolerance = 1.0;
+	p_has_access = false;
 }
 
 
@@ -71,11 +72,8 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupNotifications()
 void GlobalWaypointDriverClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)
 {
 	if (service_uri.compare("urn:jaus:jss:mobility:GlobalWaypointDriver") == 0) {
-		p_control_addr = component;
-		ROS_INFO_NAMED("GlobalWaypointDriverClient", "create event to get global waypoints from %d.%d.%d",
-				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->create_event(&GlobalWaypointDriverClient_ReceiveFSM::pHandleReportGlobalWaypoint, this, component, p_query_global_waypoint_msg, 10.0, 1);
-		sendJausMessage(p_query_global_waypoint_msg, component);
+		p_remote_addr = component;
+		p_has_access = true;
 	} else {
 		ROS_WARN_STREAM("[GlobalWaypointDriverClient] unexpected control allowed for " << service_uri << " received, ignored!");
 	}
@@ -83,18 +81,45 @@ void GlobalWaypointDriverClient_ReceiveFSM::control_allowed(std::string service_
 
 void GlobalWaypointDriverClient_ReceiveFSM::enable_monitoring_only(std::string service_uri, JausAddress component)
 {
-	ROS_INFO_NAMED("GlobalWaypointDriverClient", "create monitor event to get global waypoint from %d.%d.%d",
-			component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-	pEventsClient_ReceiveFSM->create_event(&GlobalWaypointDriverClient_ReceiveFSM::pHandleReportGlobalWaypoint, this, component, p_query_global_waypoint_msg, 10.0, 1);
-	sendJausMessage(p_query_global_waypoint_msg, component);
+	p_remote_addr = component;
 }
 
 void GlobalWaypointDriverClient_ReceiveFSM::access_deactivated(std::string service_uri, JausAddress component)
 {
-	p_control_addr = JausAddress(0);
-	ROS_INFO_NAMED("GlobalWaypointDriverClient", "cancel event for global waypoint by %d.%d.%d",
-			component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-	pEventsClient_ReceiveFSM->cancel_event(component, p_query_global_waypoint_msg);
+	p_has_access = false;
+	p_remote_addr = JausAddress(0);
+}
+
+void GlobalWaypointDriverClient_ReceiveFSM::create_events(std::string service_uri, JausAddress component, bool by_query)
+{
+	if (by_query) {
+		ROS_INFO_NAMED("GlobalWaypointDriverClient", "create QUERY timer to get global waypoints from %d.%d.%d",
+				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
+		p_query_timer = p_nh.createTimer(ros::Duration(1), &GlobalWaypointDriverClient_ReceiveFSM::pQueryCallback, this);
+	} else {
+		ROS_INFO_NAMED("GlobalWaypointDriverClient", "create EVENT to get global waypoints from %d.%d.%d",
+				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
+		pEventsClient_ReceiveFSM->create_event(&GlobalWaypointDriverClient_ReceiveFSM::pHandleReportGlobalWaypoint, this, component, p_query_global_waypoint_msg, 1.0, 1);
+		sendJausMessage(p_query_global_waypoint_msg, component);
+	}
+}
+
+void GlobalWaypointDriverClient_ReceiveFSM::cancel_events(std::string service_uri, JausAddress component, bool by_query)
+{
+	if (by_query) {
+		p_query_timer.stop();
+	} else {
+		ROS_INFO_NAMED("GlobalWaypointDriverClient", "cancel EVENT for global waypoint by %d.%d.%d",
+				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
+		pEventsClient_ReceiveFSM->cancel_event(component, p_query_global_waypoint_msg);
+	}
+}
+
+void GlobalWaypointDriverClient_ReceiveFSM::pQueryCallback(const ros::TimerEvent& event)
+{
+	if (p_remote_addr.get() != 0) {
+		sendJausMessage(p_query_global_waypoint_msg, p_remote_addr);
+	}
 }
 
 void GlobalWaypointDriverClient_ReceiveFSM::pHandleReportGlobalWaypoint(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata)
@@ -178,7 +203,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::handleReportTravelSpeedAction(Report
 void GlobalWaypointDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::Path::ConstPtr& msg)
 {
 	std::cout << "CMD PATH" << std::endl;
-	if (p_control_addr.get() != 0) {
+	if (p_has_access) {
 		SetGlobalWaypoint cmd;
 		geometry_msgs::PointStamped point_out;
 		bool transformed = false;
@@ -212,22 +237,22 @@ void GlobalWaypointDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::Path::Const
 		if (transformed || msg->poses.size() == 0) {
 			ROS_INFO_NAMED("GlobalWaypointDriverClient", "send Waypoint from Path [lat: %.2f, lon: %.2f] to %d.%d.%d",
 					cmd.getBody()->getGlobalWaypointRec()->getLatitude(), cmd.getBody()->getGlobalWaypointRec()->getLongitude(),
-					p_control_addr.getSubsystemID(), p_control_addr.getNodeID(), p_control_addr.getComponentID());
-			sendJausMessage(cmd, p_control_addr);
+					p_remote_addr.getSubsystemID(), p_remote_addr.getNodeID(), p_remote_addr.getComponentID());
+			sendJausMessage(cmd, p_remote_addr);
 			SetTravelSpeed cmd_speed;
 			float speed = p_travel_speed;
 			if (msg->poses.size() == 0) {
 				speed = 0;
 			}
 			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
-			sendJausMessage(cmd_speed, p_control_addr);
+			sendJausMessage(cmd_speed, p_remote_addr);
 		}
 	}
 }
 
 void GlobalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
-	if (p_control_addr.get() != 0) {
+	if (p_has_access) {
 		SetGlobalWaypoint cmd;
 		geometry_msgs::PointStamped point_out;
 		try {
@@ -253,21 +278,21 @@ void GlobalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::PoseSt
 		}
 		ROS_INFO_NAMED("GlobalWaypointDriverClient", "send Waypoint from Pose [lat: %.2f, lon: %.2f] to %d.%d.%d",
 				cmd.getBody()->getGlobalWaypointRec()->getLatitude(), cmd.getBody()->getGlobalWaypointRec()->getLongitude(),
-				p_control_addr.getSubsystemID(), p_control_addr.getNodeID(), p_control_addr.getComponentID());
-		sendJausMessage(cmd, p_control_addr);
+				p_remote_addr.getSubsystemID(), p_remote_addr.getNodeID(), p_remote_addr.getComponentID());
+		sendJausMessage(cmd, p_remote_addr);
 		SetTravelSpeed cmd_speed;
 		cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(p_travel_speed);
-		sendJausMessage(cmd_speed, p_control_addr);
+		sendJausMessage(cmd_speed, p_remote_addr);
 	}
 }
 
 void GlobalWaypointDriverClient_ReceiveFSM::pCmdSpeed(const std_msgs::Float32::ConstPtr& msg)
 {
-	if (p_control_addr.get() != 0) {
+	if (p_has_access) {
 		p_travel_speed = msg->data;
 		SetTravelSpeed cmd;
 		cmd.getBody()->getTravelSpeedRec()->setSpeed(p_travel_speed);
-		sendJausMessage(cmd, p_control_addr);
+		sendJausMessage(cmd, p_remote_addr);
 	}
 }
 

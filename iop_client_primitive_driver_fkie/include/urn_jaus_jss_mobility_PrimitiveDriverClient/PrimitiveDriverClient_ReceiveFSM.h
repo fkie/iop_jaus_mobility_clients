@@ -71,6 +71,8 @@ public:
 	void control_allowed(std::string service_uri, JausAddress component, unsigned char authority);
 	void enable_monitoring_only(std::string service_uri, JausAddress component);
 	void access_deactivated(std::string service_uri, JausAddress component);
+	void create_events(std::string service_uri, JausAddress component, bool by_query=false) {}
+	void cancel_events(std::string service_uri, JausAddress component, bool by_query=false) {}
 
 	PrimitiveDriverClient_ReceiveFSMContext *context;
 
@@ -82,7 +84,8 @@ protected:
 	urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM;
 	urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM;
 
-	JausAddress p_control_addr;
+	JausAddress p_remote_addr;
+	bool p_has_access;
 	ros::NodeHandle p_nh;
 	ros::Subscriber p_cmd_sub;
 	bool p_use_stamped;
