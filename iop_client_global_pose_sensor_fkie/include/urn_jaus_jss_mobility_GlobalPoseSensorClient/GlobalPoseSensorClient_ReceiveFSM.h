@@ -45,11 +45,12 @@ along with this program; or you can read the full license at
 
 #include "GlobalPoseSensorClient_ReceiveFSM_sm.h"
 #include <iop_ocu_slavelib_fkie/SlaveHandlerInterface.h>
+#include <iop_events_fkie/EventHandlerInterface.h>
 
 namespace urn_jaus_jss_mobility_GlobalPoseSensorClient
 {
 
-class DllExport GlobalPoseSensorClient_ReceiveFSM : public JTS::StateMachine, public iop::ocu::SlaveHandlerInterface
+class DllExport GlobalPoseSensorClient_ReceiveFSM : public JTS::StateMachine, public iop::ocu::SlaveHandlerInterface, public iop::EventHandlerInterface
 {
 public:
 	GlobalPoseSensorClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM);
@@ -64,6 +65,8 @@ public:
 
 
 	/// Guard Methods
+	/// EventHandlerInterface Methods
+	void event(JausAddress reporter, unsigned short query_msg_id, unsigned int reportlen, const unsigned char* reportdata);
 
 	/// SlaveHandlerInterface Methods
 	void control_allowed(std::string service_uri, JausAddress component, unsigned char authority);
@@ -92,7 +95,6 @@ protected:
 	urn_jaus_jss_mobility_GlobalPoseSensorClient::QueryGlobalPose p_query_global_pose_msg;
 	JausAddress p_remote_addr;
 	bool p_has_access;
-	void pHandleEventReportGlobalPose(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata);
 	void pQueryCallback(const ros::TimerEvent& event);
 
 

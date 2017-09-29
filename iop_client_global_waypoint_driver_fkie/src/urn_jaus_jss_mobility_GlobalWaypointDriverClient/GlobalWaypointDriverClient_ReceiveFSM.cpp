@@ -99,7 +99,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::create_events(std::string service_ur
 	} else {
 		ROS_INFO_NAMED("GlobalWaypointDriverClient", "create EVENT to get global waypoints from %d.%d.%d",
 				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->create_event(&GlobalWaypointDriverClient_ReceiveFSM::pHandleReportGlobalWaypoint, this, component, p_query_global_waypoint_msg, 1.0, 1);
+		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_global_waypoint_msg, 1.0, 1);
 		sendJausMessage(p_query_global_waypoint_msg, component);
 	}
 }
@@ -111,7 +111,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::cancel_events(std::string service_ur
 	} else {
 		ROS_INFO_NAMED("GlobalWaypointDriverClient", "cancel EVENT for global waypoint by %d.%d.%d",
 				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->cancel_event(component, p_query_global_waypoint_msg);
+		pEventsClient_ReceiveFSM->cancel_event(*this, component, p_query_global_waypoint_msg);
 	}
 }
 
@@ -122,7 +122,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::pQueryCallback(const ros::TimerEvent
 	}
 }
 
-void GlobalWaypointDriverClient_ReceiveFSM::pHandleReportGlobalWaypoint(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata)
+void GlobalWaypointDriverClient_ReceiveFSM::event(JausAddress sender, unsigned short query_msg_id, unsigned int reportlen, const unsigned char* reportdata)
 {
 	ReportGlobalWaypoint report;
 	report.decode(reportdata);

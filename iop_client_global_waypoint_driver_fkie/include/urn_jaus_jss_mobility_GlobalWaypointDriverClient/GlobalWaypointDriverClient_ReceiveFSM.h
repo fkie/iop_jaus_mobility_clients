@@ -27,13 +27,14 @@
 #include "tf/message_filter.h"
 #include "message_filters/subscriber.h"
 #include <iop_ocu_slavelib_fkie/SlaveHandlerInterface.h>
+#include <iop_events_fkie/EventHandlerInterface.h>
 
 #include "GlobalWaypointDriverClient_ReceiveFSM_sm.h"
 
 namespace urn_jaus_jss_mobility_GlobalWaypointDriverClient
 {
 
-class DllExport GlobalWaypointDriverClient_ReceiveFSM : public JTS::StateMachine, public iop::ocu::SlaveHandlerInterface
+class DllExport GlobalWaypointDriverClient_ReceiveFSM : public JTS::StateMachine, public iop::ocu::SlaveHandlerInterface, public iop::EventHandlerInterface
 {
 public:
 	GlobalWaypointDriverClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM);
@@ -46,6 +47,9 @@ public:
 	virtual void handleReportGlobalWaypointAction(ReportGlobalWaypoint msg, Receive::Body::ReceiveRec transportData);
 	virtual void handleReportTravelSpeedAction(ReportTravelSpeed msg, Receive::Body::ReceiveRec transportData);
 
+
+	/// EventHandlerInterface Methods
+	void event(JausAddress reporter, unsigned short query_msg_id, unsigned int reportlen, const unsigned char* reportdata);
 
 	/// SlaveHandlerInterface Methods
 	void control_allowed(std::string service_uri, JausAddress component, unsigned char authority);
@@ -86,7 +90,6 @@ protected:
 	void pCmdPath(const nav_msgs::Path::ConstPtr& msg);
 	void pCmdPose(const geometry_msgs::PoseStamped::ConstPtr& msg);
 	void pCmdSpeed(const std_msgs::Float32::ConstPtr& msg);
-	void pHandleReportGlobalWaypoint(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata);
 	void pQueryCallback(const ros::TimerEvent& event);
 };
 

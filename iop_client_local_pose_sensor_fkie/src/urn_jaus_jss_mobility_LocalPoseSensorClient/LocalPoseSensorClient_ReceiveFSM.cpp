@@ -113,7 +113,7 @@ void LocalPoseSensorClient_ReceiveFSM::create_events(std::string service_uri, Ja
 	} else {
 		ROS_INFO_NAMED("LocalPoseSensorClient", "create EVENT to get local pose from %d.%d.%d",
 				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->create_event(&LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose, this, component, p_query_local_pose_msg, 10.0, 0);
+		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_local_pose_msg, 10.0, 0);
 	}
 }
 
@@ -124,7 +124,7 @@ void LocalPoseSensorClient_ReceiveFSM::cancel_events(std::string service_uri, Ja
 	} else {
 		ROS_INFO_NAMED("LocalPoseSensorClient", "cancel event for local pose by %d.%d.%d",
 				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->cancel_event(component, p_query_local_pose_msg);
+		pEventsClient_ReceiveFSM->cancel_event(*this, component, p_query_local_pose_msg);
 	}
 }
 
@@ -135,7 +135,7 @@ void LocalPoseSensorClient_ReceiveFSM::pQueryCallback(const ros::TimerEvent& eve
 	}
 }
 
-void LocalPoseSensorClient_ReceiveFSM::pHandleEventReportLocalPose(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata)
+void LocalPoseSensorClient_ReceiveFSM::event(JausAddress sender, unsigned short query_msg_id, unsigned int reportlen, const unsigned char* reportdata)
 {
 	ReportLocalPose report;
 	report.decode(reportdata);

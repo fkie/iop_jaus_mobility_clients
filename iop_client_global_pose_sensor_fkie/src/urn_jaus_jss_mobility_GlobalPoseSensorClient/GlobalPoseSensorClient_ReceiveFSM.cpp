@@ -62,6 +62,10 @@ GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(urn_jaus_js
 
 GlobalPoseSensorClient_ReceiveFSM::~GlobalPoseSensorClient_ReceiveFSM()
 {
+
+	if (p_query_timer.isValid()) {
+		p_query_timer.stop();
+	}
 	delete context;
 }
 
@@ -113,7 +117,7 @@ void GlobalPoseSensorClient_ReceiveFSM::create_events(std::string service_uri, J
 	} else {
 		ROS_INFO_NAMED("GlobalPoseSensorClient", "create EVENT to get global pose from %d.%d.%d",
 				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->create_event(&GlobalPoseSensorClient_ReceiveFSM::pHandleEventReportGlobalPose, this, component, p_query_global_pose_msg, 10.0, 1);
+		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_global_pose_msg, 10.0, 1);
 	}
 }
 
@@ -124,7 +128,7 @@ void GlobalPoseSensorClient_ReceiveFSM::cancel_events(std::string service_uri, J
 	} else {
 		ROS_INFO_NAMED("GlobalPoseSensorClient", "cancel EVENT for global pose by %d.%d.%d",
 				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->cancel_event(component, p_query_global_pose_msg);
+		pEventsClient_ReceiveFSM->cancel_event(*this, component, p_query_global_pose_msg);
 	}
 }
 
@@ -135,7 +139,7 @@ void GlobalPoseSensorClient_ReceiveFSM::pQueryCallback(const ros::TimerEvent& ev
 	}
 }
 
-void GlobalPoseSensorClient_ReceiveFSM::pHandleEventReportGlobalPose(JausAddress &sender, unsigned int reportlen, const unsigned char* reportdata)
+void GlobalPoseSensorClient_ReceiveFSM::event(JausAddress sender, unsigned short query_msg_id, unsigned int reportlen, const unsigned char* reportdata)
 {
 	ReportGlobalPose report;
 	report.decode(reportdata);
