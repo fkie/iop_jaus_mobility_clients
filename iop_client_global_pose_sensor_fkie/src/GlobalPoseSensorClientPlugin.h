@@ -41,7 +41,6 @@ public:
 
 	JTS::Service* get_service();
 	void create_service(JTS::JausRouter* jaus_router);
-	virtual ~GlobalPoseSensorClientPlugin();
 
 protected:
 	urn_jaus_jss_mobility_GlobalPoseSensorClient::GlobalPoseSensorClientService *p_my_service;

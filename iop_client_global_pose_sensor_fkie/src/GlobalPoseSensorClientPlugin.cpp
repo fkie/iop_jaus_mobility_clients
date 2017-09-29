@@ -38,11 +38,6 @@ GlobalPoseSensorClientPlugin::GlobalPoseSensorClientPlugin()
 	p_transport_service = NULL;
 }
 
-GlobalPoseSensorClientPlugin::~GlobalPoseSensorClientPlugin()
-{
-	delete p_my_service;
-}
-
 JTS::Service* GlobalPoseSensorClientPlugin::get_service()
 {
 	return p_my_service;
