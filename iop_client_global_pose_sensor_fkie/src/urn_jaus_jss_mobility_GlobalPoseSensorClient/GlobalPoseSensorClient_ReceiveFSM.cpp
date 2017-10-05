@@ -29,6 +29,7 @@ along with this program; or you can read the full license at
 #include <sensor_msgs/Imu.h>
 #include <iop_builder_fkie/timestamp.h>
 #include <iop_ocu_slavelib_fkie/Slave.h>
+#include <iop_component_fkie/iop_config.h>
 
 
 using namespace JTS;
@@ -76,13 +77,11 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	registerNotification("Receiving_Ready_NotControlled", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving_Ready", "GlobalPoseSensorClient_ReceiveFSM");
 	registerNotification("Receiving_Ready", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving_Ready", "GlobalPoseSensorClient_ReceiveFSM");
 	registerNotification("Receiving", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving", "GlobalPoseSensorClient_ReceiveFSM");
-	ros::NodeHandle p_pnh("~");
-	p_pnh.param("tf_frame_world", p_tf_frame_world, p_tf_frame_world);
-	ROS_INFO("  tf_frame_world: %s", p_tf_frame_world.c_str());
-	p_pnh.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
-	ROS_INFO("  tf_frame_robot: %s", p_tf_frame_robot.c_str());
-	p_pub_navsatfix = p_nh.advertise<sensor_msgs::NavSatFix>("fix", 1, true);
-	p_pub_imu = p_nh.advertise<sensor_msgs::Imu>("imu", 1, true);
+	iop::Config cfg("~GlobalWaypointDriverClient");
+	cfg.param("tf_frame_world", p_tf_frame_world, p_tf_frame_world);
+	cfg.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
+	p_pub_navsatfix = cfg.advertise<sensor_msgs::NavSatFix>("fix", 1, true);
+	p_pub_imu = cfg.advertise<sensor_msgs::Imu>("imu", 1, true);
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
 	slave.add_supported_service(*this, "urn:jaus:jss:mobility:GlobalPoseSensor", 1, 0);
 }

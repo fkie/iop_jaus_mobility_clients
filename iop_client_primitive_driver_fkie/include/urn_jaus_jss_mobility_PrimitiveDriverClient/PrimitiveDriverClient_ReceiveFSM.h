@@ -86,7 +86,6 @@ protected:
 
 	JausAddress p_remote_addr;
 	bool p_has_access;
-	ros::NodeHandle p_nh;
 	ros::Subscriber p_cmd_sub;
 	bool p_use_stamped;
 	bool p_invert_yaw;

@@ -22,7 +22,7 @@ along with this program; or you can read the full license at
 
 #include <iop_ocu_slavelib_fkie/Slave.h>
 #include "urn_jaus_jss_mobility_PrimitiveDriverClient/PrimitiveDriverClient_ReceiveFSM.h"
-
+#include <iop_component_fkie/iop_config.h>
 
 
 
@@ -67,17 +67,15 @@ void PrimitiveDriverClient_ReceiveFSM::setupNotifications()
 	pManagementClient_ReceiveFSM->registerNotification("Receiving", ieHandler, "InternalStateChange_To_PrimitiveDriverClient_ReceiveFSM_Receiving_Ready", "ManagementClient_ReceiveFSM");
 	registerNotification("Receiving_Ready", pManagementClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ManagementClient_ReceiveFSM_Receiving_Ready", "PrimitiveDriverClient_ReceiveFSM");
 	registerNotification("Receiving", pManagementClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ManagementClient_ReceiveFSM_Receiving", "PrimitiveDriverClient_ReceiveFSM");
-
-	ros::NodeHandle pnh_("~");
-	pnh_.param("use_stamped", p_use_stamped, true);
-	pnh_.param("invert_yaw", p_invert_yaw, true);
+	iop::Config cfg("~PrimitiveDriverClient");
+	cfg.param("use_stamped", p_use_stamped, true);
+	cfg.param("invert_yaw", p_invert_yaw, true);
 	if (!p_invert_yaw) p_invert_yaw_factor = 1.0;
-	ROS_INFO_STREAM("[ClientPrimitiveDriver ROS param] use_stamped: " << p_use_stamped);
 	//create ROS subscriber
 	if (p_use_stamped) {
-		p_cmd_sub = p_nh.subscribe<geometry_msgs::TwistStamped>("joy_cmd_vel", 1, &PrimitiveDriverClient_ReceiveFSM::cmdStampedReceived, this);
+		p_cmd_sub = cfg.subscribe<geometry_msgs::TwistStamped>("joy_cmd_vel", 1, &PrimitiveDriverClient_ReceiveFSM::cmdStampedReceived, this);
 	} else {
-		p_cmd_sub = p_nh.subscribe<geometry_msgs::Twist>("joy_cmd_vel", 1, &PrimitiveDriverClient_ReceiveFSM::cmdReceived, this);
+		p_cmd_sub = cfg.subscribe<geometry_msgs::Twist>("joy_cmd_vel", 1, &PrimitiveDriverClient_ReceiveFSM::cmdReceived, this);
 	}
 	// initialize the control layer, which handles the access control staff
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));

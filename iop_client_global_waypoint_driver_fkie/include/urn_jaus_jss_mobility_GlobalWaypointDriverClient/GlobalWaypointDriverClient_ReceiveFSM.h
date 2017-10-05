@@ -73,7 +73,6 @@ protected:
 
 	JausAddress p_remote_addr;
 	ros::NodeHandle p_nh;
-	ros::NodeHandle p_pnh;
 	ros::Timer p_query_timer;
 	ros::Subscriber p_sub_path;
 	ros::Subscriber p_sub_pose;

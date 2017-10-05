@@ -1,5 +1,6 @@
 
 #include <iop_ocu_slavelib_fkie/Slave.h>
+#include <iop_component_fkie/iop_config.h>
 #include "urn_jaus_jss_mobility_GlobalWaypointDriverClient/GlobalWaypointDriverClient_ReceiveFSM.h"
 
 #include <gps_common/conversions.h>
@@ -29,7 +30,6 @@ GlobalWaypointDriverClient_ReceiveFSM::GlobalWaypointDriverClient_ReceiveFSM(urn
 	this->pEventsClient_ReceiveFSM = pEventsClient_ReceiveFSM;
 	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
 	this->pManagementClient_ReceiveFSM = pManagementClient_ReceiveFSM;
-	p_pnh = ros::NodeHandle("~");
 	p_travel_speed = 1.0;
 	p_tf_frame_world = "/world";
 	p_utm_zone = "32U";
@@ -50,20 +50,17 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupNotifications()
 	pManagementClient_ReceiveFSM->registerNotification("Receiving", ieHandler, "InternalStateChange_To_GlobalWaypointDriverClient_ReceiveFSM_Receiving_Ready", "ManagementClient_ReceiveFSM");
 	registerNotification("Receiving_Ready", pManagementClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ManagementClient_ReceiveFSM_Receiving_Ready", "GlobalWaypointDriverClient_ReceiveFSM");
 	registerNotification("Receiving", pManagementClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ManagementClient_ReceiveFSM_Receiving", "GlobalWaypointDriverClient_ReceiveFSM");
-
-	p_pnh.param("travel_speed", p_travel_speed, p_travel_speed);
-	ROS_INFO_NAMED("GlobalWaypointDriverClient", "  travel_speed: %.2f", p_travel_speed);
-	p_pnh.param("tf_frame_world", p_tf_frame_world, p_tf_frame_world);
-	ROS_INFO_NAMED("GlobalWaypointDriverClient", "  tf_frame_world: %s", p_tf_frame_world.c_str());
-	p_pnh.param("utm_zone", p_utm_zone, p_utm_zone);
-	ROS_INFO_NAMED("GlobalWaypointDriverClient", "  utm_zone: %s", p_utm_zone.c_str());
-	p_pnh.param("waypoint_tolerance", p_wp_tolerance, p_wp_tolerance);
+	iop::Config cfg("~GlobalWaypointDriverClient");
+	cfg.param("travel_speed", p_travel_speed, p_travel_speed);
+	cfg.param("tf_frame_world", p_tf_frame_world, p_tf_frame_world);
+	cfg.param("utm_zone", p_utm_zone, p_utm_zone);
+	cfg.param("waypoint_tolerance", p_wp_tolerance, p_wp_tolerance);
 	//ROS_INFO_NAMED("GlobalWaypointDriverClient", "  waypoint_tolerance: %.2f", p_wp_tolerance);
 	//create ROS subscriber
-	p_sub_path = p_nh.subscribe<nav_msgs::Path>("cmd_path", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
-	p_sub_pose = p_nh.subscribe<geometry_msgs::PoseStamped>("cmd_pose", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPose, this);
-	p_sub_speed = p_nh.subscribe<std_msgs::Float32>("cmd_speed", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this);
-	p_pub_path = p_nh.advertise<nav_msgs::Path>("global_waypoints", 5, true);
+	p_sub_path = cfg.subscribe<nav_msgs::Path>("cmd_path", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
+	p_sub_pose = cfg.subscribe<geometry_msgs::PoseStamped>("cmd_pose", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPose, this);
+	p_sub_speed = cfg.subscribe<std_msgs::Float32>("cmd_speed", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this);
+	p_pub_path = cfg.advertise<nav_msgs::Path>("global_waypoints", 5, true);
 	// initialize the control layer, which handles the access control staff
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
 	slave.add_supported_service(*this, "urn:jaus:jss:mobility:GlobalWaypointDriver", 1, 0);

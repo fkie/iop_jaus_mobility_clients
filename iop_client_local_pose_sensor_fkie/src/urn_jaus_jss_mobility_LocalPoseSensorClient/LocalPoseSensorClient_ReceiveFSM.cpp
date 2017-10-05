@@ -26,6 +26,7 @@ along with this program; or you can read the full license at
 #include <tf/transform_datatypes.h>
 #include <iop_builder_fkie/timestamp.h>
 #include <iop_ocu_slavelib_fkie/Slave.h>
+#include <iop_component_fkie/iop_config.h>
 
 using namespace JTS;
 using namespace iop::ocu;
@@ -69,16 +70,12 @@ void LocalPoseSensorClient_ReceiveFSM::setupNotifications()
 	registerNotification("Receiving_Ready_NotControlled", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving_Ready", "LocalPoseSensorClient_ReceiveFSM");
 	registerNotification("Receiving_Ready", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving_Ready", "LocalPoseSensorClient_ReceiveFSM");
 	registerNotification("Receiving", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving", "LocalPoseSensorClient_ReceiveFSM");
-
-	ros::NodeHandle p_pnh("~");
-	p_pnh.param("tf_frame_odom", p_tf_frame_odom, p_tf_frame_odom);
-	ROS_INFO("  tf_frame_odom: %s", p_tf_frame_odom.c_str());
-	p_pnh.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
-	ROS_INFO("  tf_frame_robot: %s", p_tf_frame_robot.c_str());
-	p_pnh.param("local_pose/send_inverse_trafo", p_send_inverse_trafo, p_send_inverse_trafo);
-	ROS_INFO("  local_pose/send_inverse_trafo: %d", (int)p_send_inverse_trafo);
-	p_pub_pose = p_nh.advertise<geometry_msgs::PoseStamped>("pose", 1, true);
-	p_pub_odom = p_nh.advertise<nav_msgs::Odometry>("odom", 1, true);
+	iop::Config cfg("~LocalPoseSensorClient");
+	cfg.param("tf_frame_odom", p_tf_frame_odom, p_tf_frame_odom);
+	cfg.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
+	cfg.param("send_inverse_trafo", p_send_inverse_trafo, p_send_inverse_trafo);
+	p_pub_pose = cfg.advertise<geometry_msgs::PoseStamped>("pose", 1, true);
+	p_pub_odom = cfg.advertise<nav_msgs::Odometry>("odom", 1, true);
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
 	slave.add_supported_service(*this, "urn:jaus:jss:mobility:LocalPoseSensor", 1, 0);
 }
