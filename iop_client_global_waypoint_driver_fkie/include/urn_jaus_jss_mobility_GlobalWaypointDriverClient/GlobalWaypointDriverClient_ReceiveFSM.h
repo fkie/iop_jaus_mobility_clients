@@ -85,6 +85,7 @@ protected:
 	QueryGlobalWaypoint p_query_global_waypoint_msg;
 	tf::TransformListener tfListener;
 	bool p_has_access;
+	double p_hz;
 
 	void pCmdPath(const nav_msgs::Path::ConstPtr& msg);
 	void pCmdPose(const geometry_msgs::PoseStamped::ConstPtr& msg);

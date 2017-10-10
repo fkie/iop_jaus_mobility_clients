@@ -91,6 +91,7 @@ protected:
 	ros::Timer p_query_timer;
 	ros::Publisher p_pub_navsatfix;
 	ros::Publisher p_pub_imu;
+	double p_hz;
 
 	urn_jaus_jss_mobility_GlobalPoseSensorClient::QueryGlobalPose p_query_global_pose_msg;
 	JausAddress p_remote_addr;

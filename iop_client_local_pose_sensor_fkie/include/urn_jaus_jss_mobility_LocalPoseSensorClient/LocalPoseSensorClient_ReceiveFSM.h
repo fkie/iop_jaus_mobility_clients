@@ -89,6 +89,7 @@ protected:
 	std::string p_tf_frame_odom;
 	std::string p_tf_frame_robot;
 	bool p_send_inverse_trafo;
+	double p_hz;
 
 	ros::NodeHandle p_nh;
 	ros::Timer p_query_timer;

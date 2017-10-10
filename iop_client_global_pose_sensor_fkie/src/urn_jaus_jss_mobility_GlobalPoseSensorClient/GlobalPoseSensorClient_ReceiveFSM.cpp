@@ -57,6 +57,7 @@ GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(urn_jaus_js
 	p_tf_frame_robot = "base_link";
 	p_query_global_pose_msg.getBody()->getQueryGlobalPoseRec()->setPresenceVector(65535);
 	p_has_access = false;
+	p_hz = 10.0;
 }
 
 
@@ -80,6 +81,7 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	iop::Config cfg("~GlobalWaypointDriverClient");
 	cfg.param("tf_frame_world", p_tf_frame_world, p_tf_frame_world);
 	cfg.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
+	cfg.param("hz", p_hz, p_hz, false, false);
 	p_pub_navsatfix = cfg.advertise<sensor_msgs::NavSatFix>("fix", 1, true);
 	p_pub_imu = cfg.advertise<sensor_msgs::Imu>("imu", 1, true);
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
@@ -110,13 +112,15 @@ void GlobalPoseSensorClient_ReceiveFSM::access_deactivated(std::string service_u
 void GlobalPoseSensorClient_ReceiveFSM::create_events(std::string service_uri, JausAddress component, bool by_query)
 {
 	if (by_query) {
-		ROS_INFO_NAMED("GlobalPoseSensorClient", "create QUERY timer to get global pose from %d.%d.%d",
-				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		p_query_timer = p_nh.createTimer(ros::Duration(0.1), &GlobalPoseSensorClient_ReceiveFSM::pQueryCallback, this);
+		if (p_hz > 0) {
+			ROS_INFO_NAMED("GlobalPoseSensorClient", "create QUERY timer to get global pose from %s", component.str().c_str());
+			p_query_timer = p_nh.createTimer(ros::Duration(1.0 / p_hz), &GlobalPoseSensorClient_ReceiveFSM::pQueryCallback, this);
+		} else {
+			ROS_WARN_NAMED("GlobalPoseSensorClient", "invalid hz %f.2f for QUERY timer to get global pose from %s", p_hz, component.str().c_str());
+		}
 	} else {
-		ROS_INFO_NAMED("GlobalPoseSensorClient", "create EVENT to get global pose from %d.%d.%d",
-				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_global_pose_msg, 10.0, 1);
+		ROS_INFO_NAMED("GlobalPoseSensorClient", "create EVENT to get global pose from %s", component.str().c_str());
+		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_global_pose_msg, p_hz);
 	}
 }
 
@@ -125,8 +129,7 @@ void GlobalPoseSensorClient_ReceiveFSM::cancel_events(std::string service_uri, J
 	if (by_query) {
 		p_query_timer.stop();
 	} else {
-		ROS_INFO_NAMED("GlobalPoseSensorClient", "cancel EVENT for global pose by %d.%d.%d",
-				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
+		ROS_INFO_NAMED("GlobalPoseSensorClient", "cancel EVENT for global pose by %s", component.str().c_str());
 		pEventsClient_ReceiveFSM->cancel_event(*this, component, p_query_global_pose_msg);
 	}
 }

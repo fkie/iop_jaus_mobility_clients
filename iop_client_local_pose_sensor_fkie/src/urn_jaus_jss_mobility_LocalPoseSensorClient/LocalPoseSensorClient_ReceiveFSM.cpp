@@ -54,6 +54,7 @@ LocalPoseSensorClient_ReceiveFSM::LocalPoseSensorClient_ReceiveFSM(urn_jaus_jss_
 	p_send_inverse_trafo = true;
 	p_query_local_pose_msg.getBody()->getQueryLocalPoseRec()->setPresenceVector(65535);
 	p_has_access = false;
+	p_hz = 10.0;
 }
 
 
@@ -74,6 +75,7 @@ void LocalPoseSensorClient_ReceiveFSM::setupNotifications()
 	cfg.param("tf_frame_odom", p_tf_frame_odom, p_tf_frame_odom);
 	cfg.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
 	cfg.param("send_inverse_trafo", p_send_inverse_trafo, p_send_inverse_trafo);
+	cfg.param("hz", p_hz, p_hz, false, false);
 	p_pub_pose = cfg.advertise<geometry_msgs::PoseStamped>("pose", 1, true);
 	p_pub_odom = cfg.advertise<nav_msgs::Odometry>("odom", 1, true);
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
@@ -104,13 +106,15 @@ void LocalPoseSensorClient_ReceiveFSM::access_deactivated(std::string service_ur
 void LocalPoseSensorClient_ReceiveFSM::create_events(std::string service_uri, JausAddress component, bool by_query)
 {
 	if (by_query) {
-		ROS_INFO_NAMED("LocalPoseSensorClient", "create QUERY timer to get local pose from %d.%d.%d",
-				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		p_query_timer = p_nh.createTimer(ros::Duration(0.1), &LocalPoseSensorClient_ReceiveFSM::pQueryCallback, this);
+		if (p_hz > 0) {
+			ROS_INFO_NAMED("LocalPoseSensorClient", "create QUERY timer to get local pose from %s", component.str().c_str());
+			p_query_timer = p_nh.createTimer(ros::Duration(1.0 / p_hz), &LocalPoseSensorClient_ReceiveFSM::pQueryCallback, this);
+		} else {
+			ROS_WARN_NAMED("LocalPoseSensorClient", "invalid hz %f.2f for QUERY timer to get local pose from %s", p_hz, component.str().c_str());
+		}
 	} else {
-		ROS_INFO_NAMED("LocalPoseSensorClient", "create EVENT to get local pose from %d.%d.%d",
-				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
-		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_local_pose_msg, 10.0, 0);
+		ROS_INFO_NAMED("LocalPoseSensorClient", "create EVENT to get local pose from %s", component.str().c_str());
+		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_local_pose_msg, p_hz);
 	}
 }
 
@@ -119,8 +123,7 @@ void LocalPoseSensorClient_ReceiveFSM::cancel_events(std::string service_uri, Ja
 	if (by_query) {
 		p_query_timer.stop();
 	} else {
-		ROS_INFO_NAMED("LocalPoseSensorClient", "cancel event for local pose by %d.%d.%d",
-				component.getSubsystemID(), component.getNodeID(), component.getComponentID());
+		ROS_INFO_NAMED("LocalPoseSensorClient", "cancel event for local pose %s", component.str().c_str());
 		pEventsClient_ReceiveFSM->cancel_event(*this, component, p_query_local_pose_msg);
 	}
 }
