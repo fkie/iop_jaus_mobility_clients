@@ -96,7 +96,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::create_events(std::string service_ur
 			ROS_INFO_NAMED("GlobalWaypointDriverClient", "create QUERY timer to get global waypoints from %s", component.str().c_str());
 			p_query_timer = p_nh.createTimer(ros::Duration(1.0 / p_hz), &GlobalWaypointDriverClient_ReceiveFSM::pQueryCallback, this);
 		} else {
-			ROS_WARN_NAMED("GlobalWaypointDriverClient", "invalid hz %f.2f for QUERY timer to get global waypoints from %s", p_hz, component.str().c_str());
+			ROS_WARN_NAMED("GlobalWaypointDriverClient", "invalid hz %.2f for QUERY timer to get global waypoints from %s", p_hz, component.str().c_str());
 		}
 	} else {
 		ROS_INFO_NAMED("GlobalWaypointDriverClient", "create EVENT to get global waypoints from %s", component.str().c_str());
