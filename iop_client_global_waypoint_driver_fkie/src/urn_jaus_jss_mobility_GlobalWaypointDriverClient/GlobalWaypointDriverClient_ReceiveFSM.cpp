@@ -35,7 +35,7 @@ GlobalWaypointDriverClient_ReceiveFSM::GlobalWaypointDriverClient_ReceiveFSM(urn
 	p_utm_zone = "32U";
 	p_wp_tolerance = 1.0;
 	p_has_access = false;
-	p_hz = 1.0
+	p_hz = 10.0;
 }
 
 
@@ -100,7 +100,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::create_events(std::string service_ur
 		}
 	} else {
 		ROS_INFO_NAMED("GlobalWaypointDriverClient", "create EVENT to get global waypoints from %s", component.str().c_str());
-		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_global_waypoint_msg, 1.0, 1);
+		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_global_waypoint_msg, p_hz);
 		sendJausMessage(p_query_global_waypoint_msg, component);
 	}
 }

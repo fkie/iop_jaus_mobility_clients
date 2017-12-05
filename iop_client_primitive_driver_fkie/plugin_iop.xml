@@ -5,6 +5,7 @@
     </description>
     <iop_service name="PrimitiveDriverClient" id="urn:jaus:jss:mobility:PrimitiveDriverClient" version="1.0">
       <inherits_from id="urn:jaus:jss:core:ManagementClient" min_version="1.0"/>
+      <depend id="urn:jaus:jss:core:DiscoveryClient"/>
     </iop_service>
   </class>
 </library>
