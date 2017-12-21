@@ -65,7 +65,7 @@ void GlobalWaypointListDriverClient_ReceiveFSM::setupNotifications()
 	//create ROS subscriber
 	p_sub_path = cfg.subscribe<nav_msgs::Path>("cmd_path", 1, &GlobalWaypointListDriverClient_ReceiveFSM::pCmdPath, this);
 	p_sub_speed = cfg.subscribe<std_msgs::Float32>("cmd_speed", 1, &GlobalWaypointListDriverClient_ReceiveFSM::pCmdSpeed, this);
-	// p_pub_path = cfg.advertise<nav_msgs::Path>("global_waypoints", 5, true);
+	p_pub_path = cfg.advertise<nav_msgs::Path>("global_waypoint", 5, true);
 	// initialize the control layer, which handles the access control staff
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
 	slave.add_supported_service(*this, "urn:jaus:jss:mobility:GlobalWaypointListDriver", 1, 0);
@@ -146,8 +146,55 @@ void GlobalWaypointListDriverClient_ReceiveFSM::handleReportActiveElementAction(
 
 void GlobalWaypointListDriverClient_ReceiveFSM::handleReportGlobalWaypointAction(ReportGlobalWaypoint msg, Receive::Body::ReceiveRec transportData)
 {
+	JausAddress sender = transportData.getAddress();
+	double lat, lon, alt = 0.0;
+	double roll, pitch, yaw = 0.0;
+	ReportGlobalWaypoint::Body::GlobalWaypointRec *wprec = msg.getBody()->getGlobalWaypointRec();
+	lat = wprec->getLatitude();
+	lon = wprec->getLongitude();
+	if (wprec->isAltitudeValid()) {
+		alt = wprec->getAltitude();
+	}
+	if (wprec->isRollValid()) {
+		roll = wprec->getRoll();
+	}
+	if (wprec->isPitchValid()) {
+		pitch = wprec->getPitch();
+	}
+	if (wprec->isYawValid()) {
+		yaw = wprec->getYaw();
+	}
+	if (wprec->isWaypointToleranceValid()) {
+	}
+
+	ROS_DEBUG_NAMED("GlobalWaypointListDriverClient", "currentWaypointAction from %s - lat: %.2f, lon: %.2f", sender.str().c_str(), lat, lon);
+	ROS_DEBUG_NAMED("GlobalWaypointListDriverClient", "    alt: %.2f, roll: %.2f, pitch: %.2f, yaw: %.2f", alt, roll, pitch, yaw);
+
+	nav_msgs::Path path;
+	path.header.stamp = ros::Time::now();
+	path.header.frame_id = this->p_tf_frame_world;
+
+	if (lat > -90.0 && lon > -180.0 && lat < 90.0 && lon < 180.0) {
+		double northing, easting;
+		std::string zone;
+		gps_common::LLtoUTM(lat, lon, northing, easting, zone);
+		tf::Quaternion quat;
+		quat.setRPY(roll, pitch, yaw);
+
+		geometry_msgs::PoseStamped pose;
+		pose.header = path.header;
+		pose.pose.position.x = easting;
+		pose.pose.position.y = northing;
+		pose.pose.position.z = alt;
+		pose.pose.orientation.x = quat.x();
+		pose.pose.orientation.y = quat.y();
+		pose.pose.orientation.z = quat.z();
+		pose.pose.orientation.w = quat.w();
+		path.poses.push_back(pose);
+	}
+	this->p_pub_path.publish(path);
 	// perhaps there is also GlobalWaypointDriverClient and it can handle this message
-	throw std::exception();
+	// throw std::exception();
 }
 
 void GlobalWaypointListDriverClient_ReceiveFSM::handleReportTravelSpeedAction(ReportTravelSpeed msg, Receive::Body::ReceiveRec transportData)

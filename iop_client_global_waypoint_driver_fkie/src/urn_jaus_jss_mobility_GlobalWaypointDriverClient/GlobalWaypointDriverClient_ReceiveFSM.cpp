@@ -136,10 +136,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::event(JausAddress sender, unsigned s
 
 void GlobalWaypointDriverClient_ReceiveFSM::handleReportGlobalWaypointAction(ReportGlobalWaypoint msg, Receive::Body::ReceiveRec transportData)
 {
-	uint16_t subsystem_id = transportData.getSourceID()->getSubsystemID();
-	uint8_t node_id = transportData.getSourceID()->getNodeID();
-	uint8_t component_id = transportData.getSourceID()->getComponentID();
-	JausAddress sender(subsystem_id, node_id, component_id);
+	JausAddress sender = transportData.getAddress();
 	double lat, lon, alt = 0.0;
 	double roll, pitch, yaw = 0.0;
 	ReportGlobalWaypoint::Body::GlobalWaypointRec *wprec = msg.getBody()->getGlobalWaypointRec();
@@ -160,14 +157,14 @@ void GlobalWaypointDriverClient_ReceiveFSM::handleReportGlobalWaypointAction(Rep
 	if (wprec->isWaypointToleranceValid()) {
 	}
 
-	ROS_DEBUG_NAMED("GlobalWaypointDriverClient", "currentWaypointAction from %d.%d.%d - lat: %.2f, lon: %.2f", subsystem_id, node_id, component_id, lat, lon);
+	ROS_DEBUG_NAMED("GlobalWaypointDriverClient", "currentWaypointAction from %s - lat: %.2f, lon: %.2f", sender.str().c_str(), lat, lon);
 	ROS_DEBUG_NAMED("GlobalWaypointDriverClient", "    alt: %.2f, roll: %.2f, pitch: %.2f, yaw: %.2f", alt, roll, pitch, yaw);
 
 	nav_msgs::Path path;
 	path.header.stamp = ros::Time::now();
 	path.header.frame_id = this->p_tf_frame_world;
 
-	if (lat != 0.0 && lon != 0.0) {
+	if (lat > -90.0 && lon > -180.0 && lat < 90.0 && lon < 180.0) {
 		double northing, easting;
 		std::string zone;
 		gps_common::LLtoUTM(lat, lon, northing, easting, zone);
@@ -185,7 +182,6 @@ void GlobalWaypointDriverClient_ReceiveFSM::handleReportGlobalWaypointAction(Rep
 		pose.pose.orientation.w = quat.w();
 		path.poses.push_back(pose);
 	}
-
 	this->p_pub_path.publish(path);
 }
 
