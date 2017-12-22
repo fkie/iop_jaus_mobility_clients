@@ -1,7 +1,9 @@
-The client plugins are designed for use inside a ROS OCU to control an IOP complient robot. See [iop_core](https://github.com/fkie/iop_core/blob/master/README.md) for use instructions.
+See [iop_core](https://github.com/fkie/iop_core/blob/master/README.md) for use instructions.
 
 
 # Interfaces
+
+The repository contains clients designed to control services on IOP complient robot. All client services are based on ```SlaveHandlerInterface``` and use funtionality of [Slave](https://github.com/fkie/iop_core/blob/master/doc/iop_core_packages.md#iop_ocu_slavelib_fkie). 
 
 List of service plugins in this repository:
 
@@ -28,7 +30,7 @@ _tf_frame_robot (str_, Default: "base_link")
 
 _hz (float_ , Default: 10.0)
 
-> Requested rate. 0.0 is used to get data on change.
+> Sets how often the reports are requested. If [use_queries](https://github.com/fkie/iop_core/blob/master/doc/iop_core_packages.md#parameter) is ```True``` hz must be greather then 0. In this case each time a ```Query``` message is sent to get a report. If ```use_queries``` is ```False``` an event is created to get Reports. In this case 0 disables the rate and an event of type ```on_change``` will be created.
 
 #### Publisher:
 
@@ -73,7 +75,8 @@ _waypoint_tolerance (float_, Default: 1.0)
 
 _hz (float_ , Default: 0.0)
 
-> Requested rate for current active waypoint. Zero is used to be informed only on changes.
+> Sets how often the reports are requested. If [use_queries](https://github.com/fkie/iop_core/blob/master/doc/iop_core_packages.md#parameter) is ```True``` hz must be greather then 0. In this case each time a ```Query``` message is sent to get a report. If ```use_queries``` is ```False``` an event is created to get Reports. In this case 0 disables the rate and an event of type ```on_change``` will be created.
+
 
 #### Publisher:
 
@@ -117,7 +120,8 @@ _waypoint_tolerance (float_, Default: 1.0)
 
 _hz (float_ , Default: 0.0)
 
-> Requested rate for current active waypoint. Zero is used to be informed only on changes.
+> Sets how often the reports are requested. If [use_queries](https://github.com/fkie/iop_core/blob/master/doc/iop_core_packages.md#parameter) is ```True``` hz must be greather then 0. In this case each time a ```Query``` message is sent to get a report. If ```use_queries``` is ```False``` an event is created to get Reports. In this case 0 disables the rate and an event of type ```on_change``` will be created.
+
 
 #### Publisher:
 
@@ -152,7 +156,7 @@ _tf_frame_robot (str_, Default: "base_link")
 
 _hz (float_, Default: 10.0)
 
-> Requested rate for local position. Zero is used to be informed only on changes. Note: some service reports if a new value is availabe and not if the position is changend. This can lead to very high rates if you decide to use a zero value.
+> Sets how often the reports are requested. If [use_queries](https://github.com/fkie/iop_core/blob/master/doc/iop_core_packages.md#parameter) is ```True``` hz must be greather then 0. In this case each time a ```Query``` message is sent to get a report. If ```use_queries``` is ```False``` an event is created to get Reports. In this case 0 disables the rate and an event of type ```on_change``` will be created. Note: some service reports if a new value is availabe and not if the position is changend. This can lead to very high rates if you decide to use a zero value.
 
 _send_inverse_trafo (bool_, Default: true)
 
