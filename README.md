@@ -195,11 +195,11 @@ _use_stamped (bool_, Default: true)
 
 > If *true* use _geometry_msgs::TwistStamped_ instead of _geometry_msgs::Twist_ to publish the commands.
 
-_max_linear (double, default: 1.0)
+_max_linear (double_, default: 1.0)
 
 > The maximal velocity in twist message. Based on this value the received velocity will be scaled to maximal effort of 100 percent.
 
-_max_angular (double, default: 1.5)
+_max_angular (double_, default: 1.5)
 
 > The maximal angular velocity in twist message. Based on this value the received velocity will be scaled to maximal effort of 100 percent.
 
