@@ -90,9 +90,13 @@ protected:
 	bool p_use_stamped;
 	bool p_invert_yaw;
 	double p_invert_yaw_factor;
+	double p_max_linear;
+	double p_max_angular;
+
 
 	void cmdReceived(const geometry_msgs::Twist::ConstPtr& joy);
 	void cmdStampedReceived(const geometry_msgs::TwistStamped::ConstPtr& joy);
+	double p_scale(double value, double max);
 
 };
 

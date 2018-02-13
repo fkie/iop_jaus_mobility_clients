@@ -52,6 +52,8 @@ PrimitiveDriverClient_ReceiveFSM::PrimitiveDriverClient_ReceiveFSM(urn_jaus_jss_
 	p_use_stamped = true;
 	p_invert_yaw = true;
 	p_invert_yaw_factor = -1.0;
+	p_max_linear = 1.0;
+	p_max_angular = 1.5;
 }
 
 
@@ -70,6 +72,15 @@ void PrimitiveDriverClient_ReceiveFSM::setupNotifications()
 	iop::Config cfg("~PrimitiveDriverClient");
 	cfg.param("use_stamped", p_use_stamped, true);
 	cfg.param("invert_yaw", p_invert_yaw, true);
+	double max_linear, max_angular;
+	cfg.param("max_linear", max_linear, p_max_linear);
+	cfg.param("max_angular", max_angular, p_max_angular);
+	if (max_linear != 0) {
+		p_max_linear = max_linear;
+	}
+	if (max_angular != 0) {
+		p_max_angular = max_angular;
+	}
 	if (!p_invert_yaw) p_invert_yaw_factor = 1.0;
 	//create ROS subscriber
 	if (p_use_stamped) {
@@ -113,12 +124,12 @@ void PrimitiveDriverClient_ReceiveFSM::cmdReceived(const geometry_msgs::Twist::C
 {
 	if (p_has_access) {
 		SetWrenchEffort msg;
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortX(cmd->linear.x*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortY(cmd->linear.y*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortZ(cmd->linear.z*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortX(cmd->angular.x*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortY(cmd->angular.y*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(cmd->angular.z*100*p_invert_yaw_factor);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortX(p_scale(cmd->linear.x, p_max_linear));
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortY(p_scale(cmd->linear.y, p_max_linear));
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortZ(p_scale(cmd->linear.z, p_max_linear));
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortX(p_scale(cmd->angular.x, p_max_angular));
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortY(p_scale(cmd->angular.y, p_max_angular));
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(p_scale(cmd->angular.z, p_max_angular) * p_invert_yaw_factor);
 		sendJausMessage(msg, p_remote_addr);
 	}
 
@@ -129,17 +140,25 @@ void PrimitiveDriverClient_ReceiveFSM::cmdStampedReceived(const geometry_msgs::T
 {
 	if (p_has_access) {
 		SetWrenchEffort msg;
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortX(cmd->twist.linear.x*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortY(cmd->twist.linear.y*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortZ(cmd->twist.linear.z*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortX(cmd->twist.angular.x*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortY(cmd->twist.angular.y*100);
-		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(cmd->twist.angular.z*100*p_invert_yaw_factor);
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortX(p_scale(cmd->twist.linear.x, p_max_linear));
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortY(p_scale(cmd->twist.linear.y, p_max_linear));
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveLinearEffortZ(p_scale(cmd->twist.linear.z, p_max_linear));
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortX(p_scale(cmd->twist.angular.x, p_max_angular));
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortY(p_scale(cmd->twist.angular.y, p_max_angular));
+		msg.getBody()->getWrenchEffortRec()->setPropulsiveRotationalEffortZ(p_scale(cmd->twist.angular.z, p_max_angular) * p_invert_yaw_factor);
 		sendJausMessage(msg, p_remote_addr);
 	}
 //  const geometry_msgs::Twist::ConstPtr const_twist(&cmd->twist);
 //  cmdReceived(const_twist);
 }
 
+double PrimitiveDriverClient_ReceiveFSM::p_scale(double value, double max)
+{
+	double result = value / max * 100;
+	if (result > 100) {
+		result = 100;
+	}
+	return result;
+}
 
 };

@@ -183,7 +183,7 @@ _tf_frame_robot_ -> _tf_frame_odom_
 
 ## _iop_client_primitive_driver_fkie:_ PrimitiveDriverClient
 
-Converts ```geometry_msgs::Twist``` into IOP effort command messages to drive a robot platform.
+Converts ```geometry_msgs::Twist``` into IOP effort command messages to drive a robot platform. The twist value should be between -1 and 1 to be translated accurate to the effort. For other twist value you can use `max_linear` and `max_angular` parameter to adapt your values.
 
 #### Parameter:
 
@@ -194,6 +194,15 @@ _invert_yaw (bool_, Default: true)
 _use_stamped (bool_, Default: true)
 
 > If *true* use _geometry_msgs::TwistStamped_ instead of _geometry_msgs::Twist_ to publish the commands.
+
+_max_linear (double, default: 1.0)
+
+> The maximal velocity in twist message. Based on this value the received velocity will be scaled to maximal effort of 100 percent.
+
+_max_angular (double, default: 1.5)
+
+> The maximal angular velocity in twist message. Based on this value the received velocity will be scaled to maximal effort of 100 percent.
+
 
 #### Publisher:
 
