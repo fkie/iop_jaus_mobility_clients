@@ -177,6 +177,7 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 	p_pub_navsatfix.publish(fix);
 	sensor_msgs::Imu imu;
 	tf::Quaternion quat;
+	quat.setW(1.0);
 	if (msg.getBody()->getGlobalPoseRec()->isYawValid()) {
 		quat.setRPY(msg.getBody()->getGlobalPoseRec()->getRoll(), msg.getBody()->getGlobalPoseRec()->getPitch(), msg.getBody()->getGlobalPoseRec()->getYaw());
 		imu.orientation.x = quat.x();
