@@ -24,6 +24,10 @@ _tf_frame_world (str_, Default: "world")
 
 > TF frame id used in ROS for global coordinates.
 
+_tf_frame_anchor (str_, Default: "anchor")
+
+> TF frame id for achor between `world` and `robot` frame. It is usefull since for visualization in Rviz.
+
 _tf_frame_robot (str_, Default: "base_link")
 
 > TF frame id of the robot.
@@ -31,6 +35,15 @@ _tf_frame_robot (str_, Default: "base_link")
 _hz (float_ , Default: 10.0)
 
 > Sets how often the reports are requested. If [use_queries](https://github.com/fkie/iop_core/blob/master/doc/iop_core_packages.md#parameter) is ```True``` hz must be greather then 0. In this case each time a ```Query``` message is sent to get a report. If ```use_queries``` is ```False``` an event is created to get Reports. In this case 0 disables the rate and an event of type ```on_change``` will be created.
+
+_anchor_easting (str_, Default: 0.0)
+
+> Default easting coordinate for the anchor. It can be replaced by `fix_anchor` topic.
+
+_anchor_norting (str_, Default: 0.0)
+
+> Default northing coordinate for the anchor. It can be replaced by `fix_anchor` topic.
+
 
 #### Publisher:
 
@@ -44,7 +57,9 @@ _imu (sensor_msgs::Imu)_
 
 #### Subscriber:
 
-> None
+_fix_anchor (sensor_msgs::NavSatFix)_
+
+> Allows you to add an achor TF between `world` and `robot` frame.
 
 #### Tf:
 

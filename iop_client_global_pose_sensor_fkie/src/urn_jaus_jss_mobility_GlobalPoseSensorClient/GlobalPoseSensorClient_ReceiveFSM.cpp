@@ -23,10 +23,7 @@ along with this program; or you can read the full license at
 
 #include "urn_jaus_jss_mobility_GlobalPoseSensorClient/GlobalPoseSensorClient_ReceiveFSM.h"
 
-#include <tf/transform_datatypes.h>
 #include <gps_common/conversions.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <sensor_msgs/Imu.h>
 #include <iop_builder_fkie/timestamp.h>
 #include <iop_ocu_slavelib_fkie/Slave.h>
 #include <iop_component_fkie/iop_config.h>
@@ -54,7 +51,10 @@ GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(urn_jaus_js
 	this->pEventsClient_ReceiveFSM = pEventsClient_ReceiveFSM;
 	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
 	p_tf_frame_world = "world";
+	p_tf_frame_anchor = "anchor";
 	p_tf_frame_robot = "base_link";
+	p_anchor_northing = 0.0;
+	p_anchor_easting = 0.0;
 	p_query_global_pose_msg.getBody()->getQueryGlobalPoseRec()->setPresenceVector(65535);
 	p_has_access = false;
 	p_hz = 10.0;
@@ -78,14 +78,27 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	registerNotification("Receiving_Ready_NotControlled", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving_Ready", "GlobalPoseSensorClient_ReceiveFSM");
 	registerNotification("Receiving_Ready", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving_Ready", "GlobalPoseSensorClient_ReceiveFSM");
 	registerNotification("Receiving", pAccessControlClient_ReceiveFSM->getHandler(), "InternalStateChange_To_AccessControlClient_ReceiveFSM_Receiving", "GlobalPoseSensorClient_ReceiveFSM");
-	iop::Config cfg("~GlobalWaypointDriverClient");
+	iop::Config cfg("~GlobalPoseSensorClient");
 	cfg.param("tf_frame_world", p_tf_frame_world, p_tf_frame_world);
+	cfg.param("tf_frame_anchor", p_tf_frame_anchor, p_tf_frame_anchor);
 	cfg.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
+	cfg.param("anchor_easting", p_anchor_easting, p_anchor_easting);
+	cfg.param("anchor_northing", p_anchor_northing, p_anchor_northing);
 	cfg.param("hz", p_hz, p_hz, false, false);
 	p_pub_navsatfix = cfg.advertise<sensor_msgs::NavSatFix>("fix", 1, true);
 	p_pub_imu = cfg.advertise<sensor_msgs::Imu>("imu", 1, true);
+	p_sub_anchorfix = cfg.subscribe<sensor_msgs::NavSatFix>("fix_anchor", 1, &GlobalPoseSensorClient_ReceiveFSM::anchorFixReceived, this);
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
 	slave.add_supported_service(*this, "urn:jaus:jss:mobility:GlobalPoseSensor", 1, 0);
+	tf::Quaternion quat;
+	quat.setW(1.0);
+	tf::Transform btTrans;
+	tf::Vector3 translation(p_anchor_easting, p_anchor_northing, 0.0);
+	btTrans = tf::Transform(quat, translation);
+	p_anchor_transform.setData(btTrans);
+	p_anchor_transform.frame_id_ = this->p_tf_frame_world;
+	p_anchor_transform.child_frame_id_ = this->p_tf_frame_anchor;
+	ROS_DEBUG_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str());
 }
 
 void GlobalPoseSensorClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)
@@ -159,7 +172,6 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGeomagneticPropertyAction(Re
 
 void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGlobalPose msg, Receive::Body::ReceiveRec transportData)
 {
-	/// Insert User Code HERE
 	sensor_msgs::NavSatFix fix;
 	fix.latitude = msg.getBody()->getGlobalPoseRec()->getLatitude();
 	fix.longitude = msg.getBody()->getGlobalPoseRec()->getLongitude();
@@ -192,20 +204,39 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 	double northing, easting;
 	std::string zone;
 	gps_common::LLtoUTM(fix.latitude, fix.longitude, northing, easting, zone);
-	tf::Vector3 translation(easting, northing, 0.0);
+	tf::Vector3 translation(easting - p_anchor_easting, northing - p_anchor_northing, 0.0);
 	btTrans = tf::Transform(quat, translation);
 	transform.stamp_ = fix.header.stamp;
 	transform.setData(btTrans);
-	transform.frame_id_ = this->p_tf_frame_world;
+	transform.frame_id_ = this->p_tf_frame_anchor;
 	transform.child_frame_id_ = this->p_tf_frame_robot;
-	ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s", this->p_tf_frame_world.c_str(), this->p_tf_frame_robot.c_str());
+	ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s", this->p_tf_frame_anchor.c_str(), this->p_tf_frame_robot.c_str());
+	p_anchor_transform.stamp_ = fix.header.stamp;
 	if (! transform.child_frame_id_.empty()) {
+		p_tf_broadcaster.sendTransform(p_anchor_transform);
 		p_tf_broadcaster.sendTransform(transform);
 	}
 
 }
 
-
+void GlobalPoseSensorClient_ReceiveFSM::anchorFixReceived(const sensor_msgs::NavSatFix::ConstPtr& fix)
+{
+	if (fix->status.status != -1) {
+		tf::Quaternion quat;
+		quat.setW(1.0);
+		tf::Transform btTrans;
+		double northing, easting;
+		std::string zone;
+		gps_common::LLtoUTM(fix->latitude, fix->longitude, p_anchor_northing, p_anchor_easting, zone);
+		tf::Vector3 translation(easting, northing, 0.0);
+		btTrans = tf::Transform(quat, translation);
+		p_anchor_transform.stamp_ = fix->header.stamp;
+		p_anchor_transform.setData(btTrans);
+		p_anchor_transform.frame_id_ = this->p_tf_frame_world;
+		p_anchor_transform.child_frame_id_ = this->p_tf_frame_anchor;
+		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str());
+	}
+}
 
 
 

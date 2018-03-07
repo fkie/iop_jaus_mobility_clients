@@ -41,7 +41,10 @@ along with this program; or you can read the full license at
 
 
 #include <ros/ros.h>
+#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/NavSatFix.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
 
 #include "GlobalPoseSensorClient_ReceiveFSM_sm.h"
 #include <iop_ocu_slavelib_fkie/SlaveHandlerInterface.h>
@@ -84,19 +87,24 @@ protected:
 	urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM;
 	urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM;
 	std::string p_tf_frame_world;
+	std::string p_tf_frame_anchor;
 	std::string p_tf_frame_robot;
 	tf::TransformBroadcaster p_tf_broadcaster;
+	tf::StampedTransform p_anchor_transform;
+	double p_anchor_northing, p_anchor_easting;
 
 	ros::NodeHandle p_nh;
 	ros::Timer p_query_timer;
 	ros::Publisher p_pub_navsatfix;
 	ros::Publisher p_pub_imu;
+	ros::Subscriber p_sub_anchorfix;
 	double p_hz;
 
 	urn_jaus_jss_mobility_GlobalPoseSensorClient::QueryGlobalPose p_query_global_pose_msg;
 	JausAddress p_remote_addr;
 	bool p_has_access;
 	void pQueryCallback(const ros::TimerEvent& event);
+	void anchorFixReceived(const sensor_msgs::NavSatFix::ConstPtr& fix);
 
 
 };
