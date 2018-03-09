@@ -56,6 +56,7 @@ GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(urn_jaus_js
 	p_tf_frame_robot = "base_link";
 	p_anchor_northing = 0.0;
 	p_anchor_easting = 0.0;
+	p_anchor_altitude = 0.0;
 	p_query_global_pose_msg.getBody()->getQueryGlobalPoseRec()->setPresenceVector(65535);
 	p_has_access = false;
 	p_hz = 10.0;
@@ -85,6 +86,7 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	cfg.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
 	cfg.param("anchor_easting", p_anchor_easting, p_anchor_easting);
 	cfg.param("anchor_northing", p_anchor_northing, p_anchor_northing);
+	cfg.param("anchor_altitude", p_anchor_altitude, p_anchor_altitude);
 	cfg.param("hz", p_hz, p_hz, false, false);
 	p_pub_navsatfix = cfg.advertise<sensor_msgs::NavSatFix>("fix", 1, true);
 	p_pub_imu = cfg.advertise<sensor_msgs::Imu>("imu", 1, true);
@@ -93,7 +95,7 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	slave.add_supported_service(*this, "urn:jaus:jss:mobility:GlobalPoseSensor", 1, 0);
 	p_tf_anchor.transform.translation.x = p_anchor_easting;
 	p_tf_anchor.transform.translation.y = p_anchor_northing;
-	p_tf_anchor.transform.translation.z = 0;
+	p_tf_anchor.transform.translation.z = p_anchor_altitude;
 	p_tf_anchor.transform.rotation.x = 0;
 	p_tf_anchor.transform.rotation.y = 0;
 	p_tf_anchor.transform.rotation.z = 0;
@@ -211,7 +213,7 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 	gps_common::LLtoUTM(fix.latitude, fix.longitude, northing, easting, zone);
 	transform.transform.translation.x = easting - p_anchor_easting;
 	transform.transform.translation.y = northing - p_anchor_northing;
-	transform.transform.translation.z = fix.altitude;
+	transform.transform.translation.z = fix.altitude - p_anchor_altitude;
 	transform.transform.rotation.x = quat.x();
 	transform.transform.rotation.y = quat.y();
 	transform.transform.rotation.z = quat.z();
@@ -233,10 +235,13 @@ void GlobalPoseSensorClient_ReceiveFSM::anchorFixReceived(const sensor_msgs::Nav
 {
 	if (fix->status.status != -1) {
 		std::string zone;
+		if (!std::isnan(fix->altitude)) {
+			p_anchor_altitude = fix->altitude;
+		}
 		gps_common::LLtoUTM(fix->latitude, fix->longitude, p_anchor_northing, p_anchor_easting, zone);
 		p_tf_anchor.transform.translation.x = p_anchor_easting;
 		p_tf_anchor.transform.translation.y = p_anchor_northing;
-		p_tf_anchor.transform.translation.z = fix->altitude;
+		p_tf_anchor.transform.translation.z = p_anchor_altitude;
 		tf::Quaternion q = tf::createQuaternionFromRPY(0, 0, 0);
 		p_tf_anchor.transform.rotation.x = q.x();
 		p_tf_anchor.transform.rotation.y = q.y();
