@@ -168,8 +168,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::handleReportGlobalWaypointAction(Rep
 		double northing, easting;
 		std::string zone;
 		gps_common::LLtoUTM(lat, lon, northing, easting, zone);
-		tf::Quaternion quat;
-		quat.setRPY(roll, pitch, yaw);
+		tf::Quaternion quat = tf::createQuaternionFromRPY(roll, pitch, yaw);
 
 		geometry_msgs::PoseStamped pose;
 		pose.header = path.header;
