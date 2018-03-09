@@ -194,7 +194,7 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 	sensor_msgs::Imu imu;
 	tf::Quaternion quat;
 	if (msg.getBody()->getGlobalPoseRec()->isYawValid()) {
-		ROS_INFO_NAMED("GlobalPoseSensorClient", "quat from: %.2f, %.2f, %.2f", msg.getBody()->getGlobalPoseRec()->getRoll(), msg.getBody()->getGlobalPoseRec()->getPitch(), msg.getBody()->getGlobalPoseRec()->getYaw());
+		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "quat from: %.2f, %.2f, %.2f", msg.getBody()->getGlobalPoseRec()->getRoll(), msg.getBody()->getGlobalPoseRec()->getPitch(), msg.getBody()->getGlobalPoseRec()->getYaw());
 		quat = tf::createQuaternionFromRPY(msg.getBody()->getGlobalPoseRec()->getRoll(), msg.getBody()->getGlobalPoseRec()->getPitch(), msg.getBody()->getGlobalPoseRec()->getYaw());
 		imu.orientation.x = quat.x();
 		imu.orientation.y = quat.y();
@@ -222,10 +222,8 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 	p_tf_anchor.header.stamp = transform.header.stamp;
 	if (! transform.child_frame_id.empty()) {
 		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s, stamp: %d.%d", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str(), p_tf_anchor.header.stamp.sec, p_tf_anchor.header.stamp.nsec);
-		ROS_INFO_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s, stamp: %d.%d", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str(), p_tf_anchor.header.stamp.sec, p_tf_anchor.header.stamp.nsec);
 		p_tf_broadcaster.sendTransform(p_tf_anchor);
 		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s, stamp: %d.%d", this->p_tf_frame_anchor.c_str(), this->p_tf_frame_robot.c_str(), transform.header.stamp.sec, transform.header.stamp.nsec);
-		ROS_INFO_NAMED("GlobalPoseSensorClient", "tf %s -> %s, stamp: %d.%d", this->p_tf_frame_anchor.c_str(), this->p_tf_frame_robot.c_str(), transform.header.stamp.sec, transform.header.stamp.nsec);
 		p_tf_broadcaster.sendTransform(transform);
 	}
 
