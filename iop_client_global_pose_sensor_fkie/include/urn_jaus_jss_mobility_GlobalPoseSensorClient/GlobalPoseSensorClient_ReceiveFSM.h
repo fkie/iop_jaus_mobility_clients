@@ -43,8 +43,8 @@ along with this program; or you can read the full license at
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_datatypes.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 
 #include "GlobalPoseSensorClient_ReceiveFSM_sm.h"
 #include <iop_ocu_slavelib_fkie/SlaveHandlerInterface.h>
@@ -89,8 +89,8 @@ protected:
 	std::string p_tf_frame_world;
 	std::string p_tf_frame_anchor;
 	std::string p_tf_frame_robot;
-	tf::TransformBroadcaster p_tf_broadcaster;
-	tf::StampedTransform p_anchor_transform;
+	tf2_ros::TransformBroadcaster p_tf_broadcaster;
+	geometry_msgs::TransformStamped p_tf_anchor;
 	double p_anchor_northing, p_anchor_easting;
 
 	ros::NodeHandle p_nh;

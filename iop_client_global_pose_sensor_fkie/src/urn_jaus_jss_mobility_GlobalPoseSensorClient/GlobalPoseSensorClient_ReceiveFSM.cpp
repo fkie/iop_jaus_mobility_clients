@@ -24,6 +24,7 @@ along with this program; or you can read the full license at
 #include "urn_jaus_jss_mobility_GlobalPoseSensorClient/GlobalPoseSensorClient_ReceiveFSM.h"
 
 #include <gps_common/conversions.h>
+#include <tf/transform_datatypes.h>
 #include <iop_builder_fkie/timestamp.h>
 #include <iop_ocu_slavelib_fkie/Slave.h>
 #include <iop_component_fkie/iop_config.h>
@@ -90,14 +91,17 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	p_sub_anchorfix = cfg.subscribe<sensor_msgs::NavSatFix>("fix_anchor", 1, &GlobalPoseSensorClient_ReceiveFSM::anchorFixReceived, this);
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
 	slave.add_supported_service(*this, "urn:jaus:jss:mobility:GlobalPoseSensor", 1, 0);
-	tf::Quaternion quat;
-	quat.setW(1.0);
-	tf::Transform btTrans;
-	tf::Vector3 translation(p_anchor_easting, p_anchor_northing, 0.0);
-	btTrans = tf::Transform(quat, translation);
-	p_anchor_transform.setData(btTrans);
-	p_anchor_transform.frame_id_ = this->p_tf_frame_world;
-	p_anchor_transform.child_frame_id_ = this->p_tf_frame_anchor;
+	p_tf_anchor.transform.translation.x = p_anchor_easting;
+	p_tf_anchor.transform.translation.y = p_anchor_northing;
+	p_tf_anchor.transform.translation.z = 0;
+	p_tf_anchor.transform.rotation.x = 0;
+	p_tf_anchor.transform.rotation.y = 0;
+	p_tf_anchor.transform.rotation.z = 0;
+	p_tf_anchor.transform.rotation.w = 1.0;
+	p_tf_anchor.header.stamp = ros::Time::now();
+	p_tf_anchor.header.frame_id = this->p_tf_frame_world;
+	p_tf_anchor.child_frame_id = this->p_tf_frame_anchor;
+
 	ROS_DEBUG_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str());
 }
 
@@ -189,31 +193,39 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 	p_pub_navsatfix.publish(fix);
 	sensor_msgs::Imu imu;
 	tf::Quaternion quat;
-	quat.setW(1.0);
 	if (msg.getBody()->getGlobalPoseRec()->isYawValid()) {
-		quat.setRPY(msg.getBody()->getGlobalPoseRec()->getRoll(), msg.getBody()->getGlobalPoseRec()->getPitch(), msg.getBody()->getGlobalPoseRec()->getYaw());
+		ROS_INFO_NAMED("GlobalPoseSensorClient", "quat from: %.2f, %.2f, %.2f", msg.getBody()->getGlobalPoseRec()->getRoll(), msg.getBody()->getGlobalPoseRec()->getPitch(), msg.getBody()->getGlobalPoseRec()->getYaw());
+		quat = tf::createQuaternionFromRPY(msg.getBody()->getGlobalPoseRec()->getRoll(), msg.getBody()->getGlobalPoseRec()->getPitch(), msg.getBody()->getGlobalPoseRec()->getYaw());
 		imu.orientation.x = quat.x();
 		imu.orientation.y = quat.y();
 		imu.orientation.z = quat.z();
 		imu.orientation.w = quat.w();
 		p_pub_imu.publish(imu);
+	} else {
+		quat.setW(1.0);
 	}
 
-	tf::StampedTransform transform;
-	tf::Transform btTrans;
+	geometry_msgs::TransformStamped transform;
 	double northing, easting;
 	std::string zone;
 	gps_common::LLtoUTM(fix.latitude, fix.longitude, northing, easting, zone);
-	tf::Vector3 translation(easting - p_anchor_easting, northing - p_anchor_northing, 0.0);
-	btTrans = tf::Transform(quat, translation);
-	transform.stamp_ = fix.header.stamp;
-	transform.setData(btTrans);
-	transform.frame_id_ = this->p_tf_frame_anchor;
-	transform.child_frame_id_ = this->p_tf_frame_robot;
-	ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s", this->p_tf_frame_anchor.c_str(), this->p_tf_frame_robot.c_str());
-	p_anchor_transform.stamp_ = fix.header.stamp;
-	if (! transform.child_frame_id_.empty()) {
-		p_tf_broadcaster.sendTransform(p_anchor_transform);
+	transform.transform.translation.x = easting - p_anchor_easting;
+	transform.transform.translation.y = northing - p_anchor_northing;
+	transform.transform.translation.z = fix.altitude;
+	transform.transform.rotation.x = quat.x();
+	transform.transform.rotation.y = quat.y();
+	transform.transform.rotation.z = quat.z();
+	transform.transform.rotation.w = quat.w();
+	transform.header.stamp = ros::Time::now();
+	transform.header.frame_id = this->p_tf_frame_anchor;
+	transform.child_frame_id = this->p_tf_frame_robot;
+	p_tf_anchor.header.stamp = transform.header.stamp;
+	if (! transform.child_frame_id.empty()) {
+		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s, stamp: %d.%d", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str(), p_tf_anchor.header.stamp.sec, p_tf_anchor.header.stamp.nsec);
+		ROS_INFO_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s, stamp: %d.%d", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str(), p_tf_anchor.header.stamp.sec, p_tf_anchor.header.stamp.nsec);
+		p_tf_broadcaster.sendTransform(p_tf_anchor);
+		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s, stamp: %d.%d", this->p_tf_frame_anchor.c_str(), this->p_tf_frame_robot.c_str(), transform.header.stamp.sec, transform.header.stamp.nsec);
+		ROS_INFO_NAMED("GlobalPoseSensorClient", "tf %s -> %s, stamp: %d.%d", this->p_tf_frame_anchor.c_str(), this->p_tf_frame_robot.c_str(), transform.header.stamp.sec, transform.header.stamp.nsec);
 		p_tf_broadcaster.sendTransform(transform);
 	}
 
@@ -222,18 +234,19 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 void GlobalPoseSensorClient_ReceiveFSM::anchorFixReceived(const sensor_msgs::NavSatFix::ConstPtr& fix)
 {
 	if (fix->status.status != -1) {
-		tf::Quaternion quat;
-		quat.setW(1.0);
-		tf::Transform btTrans;
-		double northing, easting;
 		std::string zone;
 		gps_common::LLtoUTM(fix->latitude, fix->longitude, p_anchor_northing, p_anchor_easting, zone);
-		tf::Vector3 translation(easting, northing, 0.0);
-		btTrans = tf::Transform(quat, translation);
-		p_anchor_transform.stamp_ = fix->header.stamp;
-		p_anchor_transform.setData(btTrans);
-		p_anchor_transform.frame_id_ = this->p_tf_frame_world;
-		p_anchor_transform.child_frame_id_ = this->p_tf_frame_anchor;
+		p_tf_anchor.transform.translation.x = p_anchor_easting;
+		p_tf_anchor.transform.translation.y = p_anchor_northing;
+		p_tf_anchor.transform.translation.z = fix->altitude;
+		tf::Quaternion q = tf::createQuaternionFromRPY(0, 0, 0);
+		p_tf_anchor.transform.rotation.x = q.x();
+		p_tf_anchor.transform.rotation.y = q.y();
+		p_tf_anchor.transform.rotation.z = q.z();
+		p_tf_anchor.transform.rotation.w = q.w();
+		p_tf_anchor.header.stamp = ros::Time::now();
+		p_tf_anchor.header.frame_id = this->p_tf_frame_world;
+		p_tf_anchor.child_frame_id = this->p_tf_frame_anchor;
 		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str());
 	}
 }
