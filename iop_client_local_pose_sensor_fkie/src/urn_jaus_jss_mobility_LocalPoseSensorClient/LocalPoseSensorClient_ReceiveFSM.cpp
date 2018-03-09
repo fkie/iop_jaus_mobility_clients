@@ -23,7 +23,8 @@ along with this program; or you can read the full license at
 
 #include "urn_jaus_jss_mobility_LocalPoseSensorClient/LocalPoseSensorClient_ReceiveFSM.h"
 
-#include <tf/transform_datatypes.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Transform.h>
 #include <iop_builder_fkie/timestamp.h>
 #include <iop_ocu_slavelib_fkie/Slave.h>
 #include <iop_component_fkie/iop_config.h>
@@ -150,25 +151,37 @@ void LocalPoseSensorClient_ReceiveFSM::handleReportLocalPoseAction(ReportLocalPo
 {
 	/// Insert User Code HERE
 	try {
-		// send quaternion
-		geometry_msgs::TransformStamped tf_msg;
 		ReportLocalPose::Body::LocalPoseRec *pose = msg.getBody()->getLocalPoseRec();
-		tf_msg.transform.translation.x = pose->getX();
-		tf_msg.transform.translation.y = pose->getY();
-		tf_msg.transform.translation.z = pose->getZ();
-		tf::Quaternion q = tf::createQuaternionFromRPY(pose->getRoll(), pose->getPitch(), pose->getYaw());
-		tf_msg.transform.rotation.x = q.x();
-		tf_msg.transform.rotation.y = q.y();
-		tf_msg.transform.rotation.z = q.z();
-		tf_msg.transform.rotation.w = q.w();
+		// send quaternion
+		tf2::Quaternion q;
+		q.setRPY(pose->getRoll(), pose->getPitch(), pose->getYaw());
+		tf2::Vector3 r(pose->getX(), pose->getY(), pose->getZ());
+		tf2::Transform transform(q, r);
+		geometry_msgs::TransformStamped tf_msg;
+		tf_msg.header.stamp = ros::Time::now();
 		ReportLocalPose::Body::LocalPoseRec::TimeStamp *ts = pose->getTimeStamp();
 		iop::Timestamp stamp(ts->getDay(), ts->getHour(), ts->getMinutes(), ts->getSeconds(), ts->getMilliseconds());
 		tf_msg.header.stamp = ros::Time::now();
 		if (!p_send_inverse_trafo) {
+			tf_msg.transform.translation.x = transform.getOrigin().getX();
+			tf_msg.transform.translation.y = transform.getOrigin().getY();
+			tf_msg.transform.translation.z = transform.getOrigin().getZ();
+			tf_msg.transform.rotation.x = transform.getRotation().getX();
+			tf_msg.transform.rotation.y = transform.getRotation().getY();
+			tf_msg.transform.rotation.z = transform.getRotation().getZ();
+			tf_msg.transform.rotation.w = transform.getRotation().getW();
 			tf_msg.header.frame_id = this->p_tf_frame_odom;
 			tf_msg.child_frame_id = this->p_tf_frame_robot;
 			ROS_DEBUG_NAMED("LocalPoseSensorClient", "tf %s -> %s", this->p_tf_frame_odom.c_str(), this->p_tf_frame_robot.c_str());
 		} else {
+			tf2::Transform inverse = transform.inverse();
+			tf_msg.transform.translation.x = inverse.getOrigin().getX();
+			tf_msg.transform.translation.y = inverse.getOrigin().getY();
+			tf_msg.transform.translation.z = inverse.getOrigin().getZ();
+			tf_msg.transform.rotation.x = inverse.getRotation().getX();
+			tf_msg.transform.rotation.y = inverse.getRotation().getY();
+			tf_msg.transform.rotation.z = inverse.getRotation().getZ();
+			tf_msg.transform.rotation.w = inverse.getRotation().getW();
 			tf_msg.header.frame_id = this->p_tf_frame_robot;
 			tf_msg.child_frame_id = this->p_tf_frame_odom;
 			ROS_DEBUG_NAMED("LocalPoseSensorClient", "tf %s i-> %s", this->p_tf_frame_robot.c_str(), this->p_tf_frame_odom.c_str());
