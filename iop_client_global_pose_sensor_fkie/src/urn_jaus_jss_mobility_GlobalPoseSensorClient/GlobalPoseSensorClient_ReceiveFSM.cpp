@@ -204,7 +204,7 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 		imu.orientation.w = quat.w();
 		p_pub_imu.publish(imu);
 	} else {
-		quat.setW(1.0);
+		quat = tf::createQuaternionFromRPY(0, 0, 0);
 	}
 
 	geometry_msgs::TransformStamped transform;
