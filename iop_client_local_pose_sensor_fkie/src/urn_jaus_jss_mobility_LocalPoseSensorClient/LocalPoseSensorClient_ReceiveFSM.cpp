@@ -26,6 +26,7 @@ along with this program; or you can read the full license at
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Transform.h>
 #include <iop_builder_fkie/timestamp.h>
+#include <iop_builder_fkie/util.h>
 #include <iop_ocu_slavelib_fkie/Slave.h>
 #include <iop_component_fkie/iop_config.h>
 
@@ -154,8 +155,8 @@ void LocalPoseSensorClient_ReceiveFSM::handleReportLocalPoseAction(ReportLocalPo
 		ReportLocalPose::Body::LocalPoseRec *pose = msg.getBody()->getLocalPoseRec();
 		// send quaternion
 		tf2::Quaternion q;
-		q.setRPY(pose->getRoll(), pose->getPitch(), pose->getYaw());
-		tf2::Vector3 r(pose->getX(), pose->getY(), pose->getZ());
+		q.setRPY(pround(pose->getRoll()), pround(pose->getPitch()), pround(pose->getYaw()));
+		tf2::Vector3 r(pround(pose->getX()), pround(pose->getY()), pround(pose->getZ()));
 		tf2::Transform transform(q, r);
 		geometry_msgs::TransformStamped tf_msg;
 		tf_msg.header.stamp = ros::Time::now();
