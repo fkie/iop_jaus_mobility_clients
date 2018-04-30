@@ -6,16 +6,15 @@ project(iop_client_global_pose_sensor_fkie)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
                 gps_common
+                iop_component_fkie
                 iop_ocu_slavelib_fkie
                 roscpp
                 sensor_msgs
                 tf
+                tf2_ros
                 )
 
-## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS system thread)
-
-iop_init(COMPONENT_ID 138)
+iop_init(COMPONENT_ID 0)
 
 ###################################
 ## catkin specific configuration ##
@@ -29,10 +28,13 @@ iop_init(COMPONENT_ID 138)
 catkin_package(
     LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS
+        gps_common
+        iop_component_fkie
         iop_ocu_slavelib_fkie
+        roscpp
         sensor_msgs
         tf
-    DEPENDS Boost
+        tf2_ros
 )
 
 ###########

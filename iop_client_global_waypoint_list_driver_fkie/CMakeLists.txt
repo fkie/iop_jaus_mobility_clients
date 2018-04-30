@@ -6,12 +6,16 @@ project(iop_client_global_waypoint_list_driver_fkie)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
              gps_common
+             iop_component_fkie
              iop_list_manager_fkie
              iop_ocu_slavelib_fkie
+             nav_msgs
              roscpp
-             tf)
-iop_init(COMPONENT_ID 0)
+             std_msgs
+             tf
+)
 
+iop_init(COMPONENT_ID 0)
 
 ###################################
 ## catkin specific configuration ##
@@ -19,8 +23,13 @@ iop_init(COMPONENT_ID 0)
 catkin_package(
     LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS
+        gps_common
+        iop_component_fkie
         iop_list_manager_fkie
         iop_ocu_slavelib_fkie
+        nav_msgs
+        std_msgs
+        tf
 )
 
 ###########
