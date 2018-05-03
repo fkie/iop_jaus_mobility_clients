@@ -57,6 +57,7 @@ GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(urn_jaus_js
 	p_anchor_northing = 0.0;
 	p_anchor_easting = 0.0;
 	p_anchor_altitude = 0.0;
+	p_publish_world_anchor = true;
 	p_query_global_pose_msg.getBody()->getQueryGlobalPoseRec()->setPresenceVector(65535);
 	p_has_access = false;
 	p_hz = 10.0;
@@ -87,6 +88,7 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	cfg.param("anchor_easting", p_anchor_easting, p_anchor_easting);
 	cfg.param("anchor_northing", p_anchor_northing, p_anchor_northing);
 	cfg.param("anchor_altitude", p_anchor_altitude, p_anchor_altitude);
+	cfg.param("publish_world_anchor", p_publish_world_anchor, p_publish_world_anchor);
 	cfg.param("hz", p_hz, p_hz, false, false);
 	p_pub_navsatfix = cfg.advertise<sensor_msgs::NavSatFix>("fix", 1, true);
 	p_pub_imu = cfg.advertise<sensor_msgs::Imu>("imu", 1, true);
@@ -223,8 +225,10 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 	transform.child_frame_id = this->p_tf_frame_robot;
 	p_tf_anchor.header.stamp = transform.header.stamp;
 	if (! transform.child_frame_id.empty()) {
-		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s, stamp: %d.%d", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str(), p_tf_anchor.header.stamp.sec, p_tf_anchor.header.stamp.nsec);
-		p_tf_broadcaster.sendTransform(p_tf_anchor);
+		if (p_publish_world_anchor) {
+			ROS_DEBUG_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s, stamp: %d.%d", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str(), p_tf_anchor.header.stamp.sec, p_tf_anchor.header.stamp.nsec);
+			p_tf_broadcaster.sendTransform(p_tf_anchor);
+		}
 		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s, stamp: %d.%d", this->p_tf_frame_anchor.c_str(), this->p_tf_frame_robot.c_str(), transform.header.stamp.sec, transform.header.stamp.nsec);
 		p_tf_broadcaster.sendTransform(transform);
 	}

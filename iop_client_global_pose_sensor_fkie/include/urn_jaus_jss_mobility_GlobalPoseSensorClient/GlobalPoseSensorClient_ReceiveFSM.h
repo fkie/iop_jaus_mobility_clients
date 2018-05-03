@@ -92,6 +92,7 @@ protected:
 	tf2_ros::TransformBroadcaster p_tf_broadcaster;
 	geometry_msgs::TransformStamped p_tf_anchor;
 	double p_anchor_northing, p_anchor_easting, p_anchor_altitude;
+	bool p_publish_world_anchor;
 
 	ros::NodeHandle p_nh;
 	ros::Timer p_query_timer;
