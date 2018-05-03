@@ -1,0 +1,10 @@
+<library path="libiop_client_local_waypoint_driver_fkie">
+  <class name="LocalWaypointDriverClient" type="iop::LocalWaypointDriverClientPlugin" base_class_type="iop::PluginInterface">
+    <description>
+      LocalWaypointDriver client Service Plugin, used e.g. by OCU
+    </description>
+    <iop_service name="LocalWaypointDriverClient" id="urn:jaus:jss:mobility:LocalWaypointDriverClient" version="1.0">
+      <inherits_from id="urn:jaus:jss:core:ManagementClient" min_version="1.0"/>
+    </iop_service>
+  </class>
+</library>
