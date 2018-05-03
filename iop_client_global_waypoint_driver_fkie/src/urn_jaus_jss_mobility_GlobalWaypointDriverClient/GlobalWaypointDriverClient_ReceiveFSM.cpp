@@ -4,7 +4,6 @@
 #include "urn_jaus_jss_mobility_GlobalWaypointDriverClient/GlobalWaypointDriverClient_ReceiveFSM.h"
 
 #include <gps_common/conversions.h>
-#include <tf/transform_datatypes.h>
 
 
 
