@@ -241,9 +241,18 @@ void LocalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::PoseSta
 		float speed = p_travel_speed;
 		try {
 			geometry_msgs::PoseStamped pose_in = *msg;
-			tfListener.waitForTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(0.3));
 			geometry_msgs::PoseStamped pose_out;
-			tfListener.transformPose(p_tf_frame_robot, pose_in, pose_out);
+			if (!pose_in.header.frame_id.empty() && !p_tf_frame_robot.empty()) {
+				tfListener.waitForTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(0.3));
+				tfListener.transformPose(p_tf_frame_robot, pose_in, pose_out);
+			} else {
+				pose_out = pose_in;
+				if (p_tf_frame_robot.empty()) {
+					ROS_WARN_NAMED("LocalWaypointDriverClient", "p_tf_frame_robot is empty, forward local pose without transform to %s", p_remote_addr.str().c_str());
+				} else if (pose_in.header.frame_id.empty()) {
+					ROS_WARN_NAMED("LocalWaypointDriverClient", "pose_in.header.frame_id is empty, forward local pose without transform to %s", p_remote_addr.str().c_str());
+				}
+			}
 			cmd.getBody()->getLocalWaypointRec()->setX(pose_out.pose.position.x);
 			cmd.getBody()->getLocalWaypointRec()->setY(pose_out.pose.position.x);
 			cmd.getBody()->getLocalWaypointRec()->setZ(pose_out.pose.position.z);
