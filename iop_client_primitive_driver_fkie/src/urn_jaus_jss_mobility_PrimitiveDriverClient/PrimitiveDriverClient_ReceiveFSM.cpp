@@ -157,6 +157,8 @@ double PrimitiveDriverClient_ReceiveFSM::p_scale(double value, double max)
 	double result = value / max * 100;
 	if (result > 100) {
 		result = 100;
+	} else if (result < -100) {
+		result = -100;
 	}
 	return result;
 }
