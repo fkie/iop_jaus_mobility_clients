@@ -31,7 +31,7 @@ _anchor_norting (str_, Default: 0.0)
 
 > Default northing coordinate for the anchor. It can be replaced by `fix_anchor` topic.
 
-_p_publish_world_anchor (bool_ Default: true)
+_publish_world_anchor (bool_ Default: true)
 
 > Enables the publishing of /world to anchor tf. You can publish this disable the publishing of this tf by this service and publish tf itself.
 
