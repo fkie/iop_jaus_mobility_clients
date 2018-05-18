@@ -23,13 +23,17 @@ _hz (float_ , Default: 10.0)
 
 > Sets how often the reports are requested. If [use_queries](https://github.com/fkie/iop_core/blob/master/iop_ocu_slavelib_fkie/README.md#parameter) is ```True``` hz must be greather then 0. In this case each time a ```Query``` message is sent to get a report. If ```use_queries``` is ```False``` an event is created to get Reports. In this case 0 disables the rate and an event of type ```on_change``` will be created.
 
-_anchor_easting (str_, Default: 0.0)
+_anchor_easting (double_, Default: 0.0)
 
 > Default easting coordinate for the anchor. It can be replaced by `fix_anchor` topic.
 
-_anchor_norting (str_, Default: 0.0)
+_anchor_norting (double_, Default: 0.0)
 
 > Default northing coordinate for the anchor. It can be replaced by `fix_anchor` topic.
+
+_anchor_altitude (double_, Default: 0.0)
+
+> Default altitude coordinate for the anchor. It can be replaced by `fix_anchor` topic.
 
 _publish_world_anchor (bool_ Default: true)
 
@@ -44,6 +48,10 @@ _fix (sensor_msgs::NavSatFix)_
 _imu (sensor_msgs::Imu)_
 
 > Publishes global orientation.
+
+_global_pose (geometry_msgs::PoseStamped)_
+
+> Publishes global pose transfromed from Lat/Lon to UTM. The `frame_id` is set UTM zone.
 
 #### Subscriber:
 

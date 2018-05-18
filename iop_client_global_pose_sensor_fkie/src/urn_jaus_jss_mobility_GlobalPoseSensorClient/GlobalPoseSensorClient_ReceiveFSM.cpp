@@ -92,6 +92,7 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	cfg.param("hz", p_hz, p_hz, false, false);
 	p_pub_navsatfix = cfg.advertise<sensor_msgs::NavSatFix>("fix", 1, true);
 	p_pub_imu = cfg.advertise<sensor_msgs::Imu>("imu", 1, true);
+	p_pub_pose = cfg.advertise<geometry_msgs::PoseStamped>("global_pose", 5, true);
 	p_sub_anchorfix = cfg.subscribe<sensor_msgs::NavSatFix>("fix_anchor", 1, &GlobalPoseSensorClient_ReceiveFSM::anchorFixReceived, this);
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
 	slave.add_supported_service(*this, "urn:jaus:jss:mobility:GlobalPoseSensor", 1, 0);
@@ -232,7 +233,18 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s, stamp: %d.%d", this->p_tf_frame_anchor.c_str(), this->p_tf_frame_robot.c_str(), transform.header.stamp.sec, transform.header.stamp.nsec);
 		p_tf_broadcaster.sendTransform(transform);
 	}
-
+	// publish global pose
+	geometry_msgs::PoseStamped pose;
+	pose.pose.position.x = easting;
+	pose.pose.position.y = northing;
+	pose.pose.position.z = fix.altitude;
+	pose.pose.orientation.x = quat.x();
+	pose.pose.orientation.y = quat.y();
+	pose.pose.orientation.z = quat.z();
+	pose.pose.orientation.w = quat.w();
+	pose.header.stamp = transform.header.stamp;
+	pose.header.frame_id = zone;
+	p_pub_pose.publish(pose);
 }
 
 void GlobalPoseSensorClient_ReceiveFSM::anchorFixReceived(const sensor_msgs::NavSatFix::ConstPtr& fix)

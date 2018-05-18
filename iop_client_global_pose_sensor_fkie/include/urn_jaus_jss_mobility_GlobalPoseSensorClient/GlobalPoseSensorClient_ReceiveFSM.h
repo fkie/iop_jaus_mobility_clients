@@ -45,6 +45,7 @@ along with this program; or you can read the full license at
 #include <sensor_msgs/NavSatFix.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 
 #include "GlobalPoseSensorClient_ReceiveFSM_sm.h"
 #include <iop_ocu_slavelib_fkie/SlaveHandlerInterface.h>
@@ -98,6 +99,7 @@ protected:
 	ros::Timer p_query_timer;
 	ros::Publisher p_pub_navsatfix;
 	ros::Publisher p_pub_imu;
+	ros::Publisher p_pub_pose;
 	ros::Subscriber p_sub_anchorfix;
 	double p_hz;
 
