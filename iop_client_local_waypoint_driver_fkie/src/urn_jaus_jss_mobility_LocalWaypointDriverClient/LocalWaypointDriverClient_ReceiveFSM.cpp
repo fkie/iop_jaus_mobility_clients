@@ -254,7 +254,7 @@ void LocalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::PoseSta
 				}
 			}
 			cmd.getBody()->getLocalWaypointRec()->setX(pose_out.pose.position.x);
-			cmd.getBody()->getLocalWaypointRec()->setY(pose_out.pose.position.x);
+			cmd.getBody()->getLocalWaypointRec()->setY(pose_out.pose.position.y);
 			cmd.getBody()->getLocalWaypointRec()->setZ(pose_out.pose.position.z);
 			double roll, pitch, yaw;
 			tf::Quaternion quat(pose_out.pose.orientation.x, pose_out.pose.orientation.y, pose_out.pose.orientation.z, pose_out.pose.orientation.w);
