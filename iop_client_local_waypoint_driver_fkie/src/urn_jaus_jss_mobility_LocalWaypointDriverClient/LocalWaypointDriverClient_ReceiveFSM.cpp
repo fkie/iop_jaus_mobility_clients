@@ -58,7 +58,7 @@ void LocalWaypointDriverClient_ReceiveFSM::setupNotifications()
 	//ROS_INFO_NAMED("LocalWaypointDriverClient", "  waypoint_tolerance: %.2f", p_wp_tolerance);
 	//create ROS subscriber
 	// p_sub_path = cfg.subscribe<nav_msgs::Path>("cmd_path", 1, &LocalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
-	p_sub_pose = cfg.subscribe<geometry_msgs::PoseStamped>("cmd_pose", 1, &LocalWaypointDriverClient_ReceiveFSM::pCmdPose, this);
+	p_sub_pose = cfg.subscribe<geometry_msgs::PoseStamped>("cmd_local_pose", 1, &LocalWaypointDriverClient_ReceiveFSM::pCmdPose, this);
 	p_sub_speed = cfg.subscribe<std_msgs::Float32>("cmd_speed", 1, &LocalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this);
 	p_pub_path = cfg.advertise<nav_msgs::Path>("local_waypath", 5, true);
 	// initialize the control layer, which handles the access control staff
