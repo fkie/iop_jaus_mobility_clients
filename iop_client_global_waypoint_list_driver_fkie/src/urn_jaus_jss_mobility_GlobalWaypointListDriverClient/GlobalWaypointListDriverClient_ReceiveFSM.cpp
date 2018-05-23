@@ -63,7 +63,7 @@ void GlobalWaypointListDriverClient_ReceiveFSM::setupNotifications()
 	cfg.param("hz", p_hz, p_hz, false, false);
 	//ROS_INFO_NAMED("GlobalWaypointDriverClient", "  waypoint_tolerance: %.2f", p_wp_tolerance);
 	//create ROS subscriber
-	p_sub_path = cfg.subscribe<nav_msgs::Path>("cmd_path", 1, &GlobalWaypointListDriverClient_ReceiveFSM::pCmdPath, this);
+	p_sub_path = cfg.subscribe<nav_msgs::Path>("cmd_global_path", 1, &GlobalWaypointListDriverClient_ReceiveFSM::pCmdPath, this);
 	p_sub_speed = cfg.subscribe<std_msgs::Float32>("cmd_speed", 1, &GlobalWaypointListDriverClient_ReceiveFSM::pCmdSpeed, this);
 	p_pub_path = cfg.advertise<nav_msgs::Path>("global_waypoint", 5, true);
 	// initialize the control layer, which handles the access control staff
