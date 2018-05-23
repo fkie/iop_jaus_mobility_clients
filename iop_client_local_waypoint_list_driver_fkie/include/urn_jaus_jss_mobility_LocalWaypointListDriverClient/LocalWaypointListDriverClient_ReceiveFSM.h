@@ -87,6 +87,7 @@ protected:
 	tf::TransformListener tfListener;
 	bool p_has_access;
 	double p_hz;
+	bool p_new_rospath_received;
 
 	void pCmdPath(const nav_msgs::Path::ConstPtr& msg);
 	void pCmdPose(const geometry_msgs::PoseStamped::ConstPtr& msg);

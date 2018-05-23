@@ -31,12 +31,12 @@ LocalWaypointListDriverClient_ReceiveFSM::LocalWaypointListDriverClient_ReceiveF
 	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
 	this->pManagementClient_ReceiveFSM = pManagementClient_ReceiveFSM;
 	this->pListManagerClient_ReceiveFSM = pListManagerClient_ReceiveFSM;
-	pListManagerClient_ReceiveFSM->add_state_handler(&LocalWaypointListDriverClient_ReceiveFSM::pListState, this);
 	p_travel_speed = 1.0;
 	p_tf_frame_robot = "base_link";
 	p_wp_tolerance = 1.0;
 	p_has_access = false;
 	p_hz = 0.0;
+	p_new_rospath_received = false;
 }
 
 
@@ -54,6 +54,7 @@ void LocalWaypointListDriverClient_ReceiveFSM::setupNotifications()
 	registerNotification("Receiving_Receiving", pListManagerClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ListManagerClient_ReceiveFSM_Receiving", "LocalWaypointListDriverClient_ReceiveFSM");
 	registerNotification("Receiving_Ready", pListManagerClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ListManagerClient_ReceiveFSM_Receiving_Ready", "LocalWaypointListDriverClient_ReceiveFSM");
 	registerNotification("Receiving", pListManagerClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ListManagerClient_ReceiveFSM_Receiving", "LocalWaypointListDriverClient_ReceiveFSM");
+	pListManagerClient_ReceiveFSM->add_state_handler(&LocalWaypointListDriverClient_ReceiveFSM::pListState, this);
 	iop::Config cfg("~LocalWaypointListDriverClient");
 	cfg.param("travel_speed", p_travel_speed, p_travel_speed);
 	cfg.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
@@ -242,6 +243,7 @@ void LocalWaypointListDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::Path::Co
 				printf ("Failure %s\n", ex.what()); //Print exception which was caught
 			}
 		}
+		p_new_rospath_received = true;
 		// after all points are transfered to the driver, we will be informed by list manager. After this we send the ExecuteList command.
 	}
 }
@@ -261,11 +263,13 @@ void LocalWaypointListDriverClient_ReceiveFSM::pCmdSpeed(const std_msgs::Float32
 void LocalWaypointListDriverClient_ReceiveFSM::pListState(bool success, unsigned int count)
 {
 	if (success && count > 0) {
-		ROS_INFO_NAMED("LocalWaypointListDriverClient", "execute list with %d points with speed %.2f on %s", count, p_travel_speed, p_remote_addr.str().c_str());
-		ExecuteList cmd;
-		cmd.getBody()->getExecuteListRec()->setElementUID(0);
-		cmd.getBody()->getExecuteListRec()->setSpeed(p_travel_speed);
-		sendJausMessage(cmd, p_remote_addr);
+		if (p_new_rospath_received) {
+			ROS_INFO_NAMED("LocalWaypointListDriverClient", "execute list with %d points with speed %.2f on %s", count, p_travel_speed, p_remote_addr.str().c_str());
+			ExecuteList cmd;
+			cmd.getBody()->getExecuteListRec()->setElementUID(0);
+			cmd.getBody()->getExecuteListRec()->setSpeed(p_travel_speed);
+			sendJausMessage(cmd, p_remote_addr);
+		}
 	} else if (!success) {
 		ROS_INFO_NAMED("LocalWaypointListDriverClient", "errors while  transfer points occurred, stop and clear all points");
 		pListManagerClient_ReceiveFSM->clear();
@@ -274,6 +278,7 @@ void LocalWaypointListDriverClient_ReceiveFSM::pListState(bool success, unsigned
 		cmd.getBody()->getExecuteListRec()->setSpeed(0);
 		sendJausMessage(cmd, p_remote_addr);
 	}
+	p_new_rospath_received = false;
 }
 
 };
