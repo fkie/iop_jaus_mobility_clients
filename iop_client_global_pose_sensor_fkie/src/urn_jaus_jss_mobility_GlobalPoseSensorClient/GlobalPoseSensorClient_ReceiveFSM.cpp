@@ -184,7 +184,9 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 	sensor_msgs::NavSatFix fix;
 	fix.latitude = msg.getBody()->getGlobalPoseRec()->getLatitude();
 	fix.longitude = msg.getBody()->getGlobalPoseRec()->getLongitude();
-	fix.altitude = msg.getBody()->getGlobalPoseRec()->getAltitude();
+	if (msg.getBody()->getGlobalPoseRec()->isAltitudeValid()) {
+		fix.altitude = msg.getBody()->getGlobalPoseRec()->getAltitude();
+	}
 	fix.status.status = 1;
 	if (msg.getBody()->getGlobalPoseRec()->isTimeStampValid()) {
 		// get timestamp
@@ -214,6 +216,22 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 	double northing, easting;
 	std::string zone;
 	gps_common::LLtoUTM(fix.latitude, fix.longitude, northing, easting, zone);
+	if (p_anchor_easting == 0 && p_anchor_northing == 0) {
+		p_anchor_easting = easting;
+		p_anchor_northing = northing;
+		p_anchor_altitude = fix.altitude;
+		p_tf_anchor.transform.translation.x = p_anchor_easting;
+		p_tf_anchor.transform.translation.y = p_anchor_northing;
+		p_tf_anchor.transform.translation.z = p_anchor_altitude;
+		tf::Quaternion q = tf::createQuaternionFromRPY(0, 0, 0);
+		p_tf_anchor.transform.rotation.x = q.x();
+		p_tf_anchor.transform.rotation.y = q.y();
+		p_tf_anchor.transform.rotation.z = q.z();
+		p_tf_anchor.transform.rotation.w = q.w();
+		p_tf_anchor.header.stamp = ros::Time::now();
+		p_tf_anchor.header.frame_id = this->p_tf_frame_world;
+		p_tf_anchor.child_frame_id = this->p_tf_frame_anchor;
+	}
 	transform.transform.translation.x = easting - p_anchor_easting;
 	transform.transform.translation.y = northing - p_anchor_northing;
 	transform.transform.translation.z = fix.altitude - p_anchor_altitude;
