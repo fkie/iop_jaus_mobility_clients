@@ -75,6 +75,7 @@ void LocalWaypointListDriverClient_ReceiveFSM::control_allowed(std::string servi
 	if (service_uri.compare("urn:jaus:jss:mobility:LocalWaypointListDriver") == 0) {
 		p_remote_addr = component;
 		p_has_access = true;
+		pListManagerClient_ReceiveFSM->set_remote(p_remote_addr);
 	} else {
 		ROS_WARN_STREAM("[LocalWaypointDriverListClient] unexpected control allowed for " << service_uri << " received, ignored!");
 	}
@@ -89,6 +90,7 @@ void LocalWaypointListDriverClient_ReceiveFSM::access_deactivated(std::string se
 {
 	p_has_access = false;
 	p_remote_addr = JausAddress(0);
+	pListManagerClient_ReceiveFSM->release_remote();
 }
 
 void LocalWaypointListDriverClient_ReceiveFSM::create_events(std::string service_uri, JausAddress component, bool by_query)
