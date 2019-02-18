@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fkie_iop_client_velocity_state_sensor</name>
+  <version>1.1.0</version>
+  <description>The client service for VelocityState service </description>
+
+  <author>Alexander Tiderko</author>
+  <maintainer email="alexander.tiderko@fkie.fraunhofer.de">Alexander Tiderko</maintainer>
+  <license>GPLv2</license>
+  <url type="website">https://github.com/fkie/iop_jaus_mobility_clients</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>fkie_iop_component</depend>
+  <depend>fkie_iop_ocu_slavelib</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>roscpp</depend>
+
+  <export>
+    <fkie_iop_component plugin="${prefix}/plugin_iop.xml" />
+  </export>
+
+</package>
