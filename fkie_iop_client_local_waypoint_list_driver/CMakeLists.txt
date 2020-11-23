@@ -26,6 +26,7 @@ catkin_package(
         fkie_iop_list_manager
         fkie_iop_ocu_slavelib
         nav_msgs
+        roscpp
         std_msgs
         tf
 )
