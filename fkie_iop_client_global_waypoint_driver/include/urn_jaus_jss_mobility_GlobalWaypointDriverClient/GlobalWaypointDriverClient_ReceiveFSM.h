@@ -21,6 +21,7 @@
 #include <ros/ros.h>
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <sensor_msgs/NavSatFix.h>
 #include <std_msgs/Float32.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
@@ -77,6 +78,7 @@ protected:
 	ros::Subscriber p_sub_path;
 	ros::Subscriber p_sub_pose;
 	ros::Subscriber p_sub_speed;
+	ros::Subscriber p_sub_fix;
 	ros::Publisher p_pub_path;
 	float p_travel_speed;
 	float p_wp_tolerance;
@@ -90,6 +92,7 @@ protected:
 	void pCmdPath(const nav_msgs::Path::ConstPtr& msg);
 	void pCmdPose(const geometry_msgs::PoseStamped::ConstPtr& msg);
 	void pCmdSpeed(const std_msgs::Float32::ConstPtr& msg);
+	void pCmdFix(const sensor_msgs::NavSatFix::ConstPtr& msg);
 	void pQueryCallback(const ros::TimerEvent& event);
 };
 

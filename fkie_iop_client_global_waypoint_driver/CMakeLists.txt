@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
              gps_common
              nav_msgs
              roscpp
+             sensor_msgs
              std_msgs
              tf
 )
@@ -29,6 +30,7 @@ catkin_package(
         gps_common
         nav_msgs
         roscpp
+        sensor_msgs
         std_msgs
         tf
 )

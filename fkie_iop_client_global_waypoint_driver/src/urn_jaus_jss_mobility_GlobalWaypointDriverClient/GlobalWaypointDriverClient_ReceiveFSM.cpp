@@ -60,6 +60,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupNotifications()
 	//create ROS subscriber
 	// p_sub_path = cfg.subscribe<nav_msgs::Path>("cmd_path", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
 	p_sub_pose = cfg.subscribe<geometry_msgs::PoseStamped>("cmd_pose", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPose, this);
+	p_sub_fix = cfg.subscribe<sensor_msgs::NavSatFix>("cmd_fix", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdFix, this);
 	p_sub_speed = cfg.subscribe<std_msgs::Float32>("cmd_speed", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this);
 	p_pub_path = cfg.advertise<nav_msgs::Path>("global_waypoint", 5, true);
 	// initialize the control layer, which handles the access control staff
@@ -270,6 +271,33 @@ void GlobalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::PoseSt
 			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
 			sendJausMessage(cmd_speed, p_remote_addr);
 			ROS_INFO_NAMED("GlobalWaypointDriverClient", "send Waypoint from Pose [lat: %.2f, lon: %.2f] to %s",
+					cmd.getBody()->getGlobalWaypointRec()->getLatitude(), cmd.getBody()->getGlobalWaypointRec()->getLongitude(),
+					p_remote_addr.str().c_str());
+			sendJausMessage(cmd, p_remote_addr);
+		} catch (tf::TransformException &ex) {
+			printf ("Failure %s\n", ex.what()); //Print exception which was caught
+			speed = 0.0;
+			ROS_INFO_NAMED("GlobalWaypointDriverClient", "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
+			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
+			sendJausMessage(cmd_speed, p_remote_addr);
+		}
+	}
+}
+
+void GlobalWaypointDriverClient_ReceiveFSM::pCmdFix(const sensor_msgs::NavSatFix::ConstPtr& msg)
+{
+	if (p_has_access) {
+		SetGlobalWaypoint cmd;
+		SetTravelSpeed cmd_speed;
+		float speed = p_travel_speed;
+		try {
+			cmd.getBody()->getGlobalWaypointRec()->setLatitude(msg->latitude);
+			cmd.getBody()->getGlobalWaypointRec()->setLongitude(msg->longitude);
+			cmd.getBody()->getGlobalWaypointRec()->setAltitude(msg->altitude);
+			ROS_INFO_NAMED("GlobalWaypointDriverClient", "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
+			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
+			sendJausMessage(cmd_speed, p_remote_addr);
+			ROS_INFO_NAMED("GlobalWaypointDriverClient", "send Waypoint from NavSatFix [lat: %.2f, lon: %.2f] to %s",
 					cmd.getBody()->getGlobalWaypointRec()->getLatitude(), cmd.getBody()->getGlobalWaypointRec()->getLongitude(),
 					p_remote_addr.str().c_str());
 			sendJausMessage(cmd, p_remote_addr);
