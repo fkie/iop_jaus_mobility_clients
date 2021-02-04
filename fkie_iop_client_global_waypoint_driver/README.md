@@ -41,6 +41,10 @@ _cmd_pose (geometry_msgs::PoseStamped)_
 
 > Command for global waypoint. The coordinates are transformed to the global frame id and converted to Lat/Lon.
 
+_cmd_fix (sensor_msgs::NavSatFix)_
+
+> Command for global waypoint without orientation.
+
 _cmd_speed (std_msgs::Float32)_
 
 > Set the current travel speed.
