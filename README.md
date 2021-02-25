@@ -10,14 +10,7 @@ The repository contains clients designed to control services on IOP complient ro
 [fkie_iop_client_global_waypoint_driver: GlobalWaypointDriverClient](fkie_iop_client_global_waypoint_driver/README.md)  
 [fkie_iop_client_global_waypoint_list_driver: GlobalWaypointListDriverClient](fkie_iop_client_global_waypoint_list_driver/README.md)  
 [fkie_iop_client_local_pose_sensor: LocalPoseSensorClient](fkie_iop_client_local_pose_sensor/README.md)  
+[fkie_iop_client_local_waypoint_driver: LocalWaypointDriverClient](fkie_iop_client_local_waypoint_driver/README.md)  
+[fkie_iop_client_local_waypoint_list_driver: LocalWaypointListDriverClient](fkie_iop_client_local_waypoint_list_driver/README.md)  
 [fkie_iop_client_primitive_driver: PrimitiveDriverClient](fkie_iop_client_primitive_driver/README.md)
-
-
-
-
-
-
-
-
-
-
+[fkie_iop_client_velocity_state_sensor: VelocityStateSensorClient](fkie_iop_client_velocity_state_sensor/README.md)

@@ -1,10 +1,9 @@
 
-#include <fkie_iop_ocu_slavelib/Slave.h>
-#include <fkie_iop_component/iop_config.h>
 #include "urn_jaus_jss_mobility_LocalWaypointDriverClient/LocalWaypointDriverClient_ReceiveFSM.h"
-
-#include <gps_common/conversions.h>
-#include <tf/transform_datatypes.h>
+#include <fkie_iop_component/iop_config.hpp>
+#include <fkie_iop_ocu_slavelib/Slave.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 
 
@@ -16,7 +15,9 @@ namespace urn_jaus_jss_mobility_LocalWaypointDriverClient
 
 
 
-LocalWaypointDriverClient_ReceiveFSM::LocalWaypointDriverClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM)
+LocalWaypointDriverClient_ReceiveFSM::LocalWaypointDriverClient_ReceiveFSM(std::shared_ptr<iop::Component> cmp, urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM)
+: logger(cmp->get_logger().get_child("LocalWaypointDriverClient")),
+  p_query_timer(std::chrono::milliseconds(100), std::bind(&LocalWaypointDriverClient_ReceiveFSM::pQueryCallback, this), false)
 {
 
 	/*
@@ -26,10 +27,11 @@ LocalWaypointDriverClient_ReceiveFSM::LocalWaypointDriverClient_ReceiveFSM(urn_j
 	 */
 	context = new LocalWaypointDriverClient_ReceiveFSMContext(*this);
 
-	this->pTransport_ReceiveFSM = pTransport_ReceiveFSM;
-	this->pEventsClient_ReceiveFSM = pEventsClient_ReceiveFSM;
-	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
 	this->pManagementClient_ReceiveFSM = pManagementClient_ReceiveFSM;
+	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
+	this->pEventsClient_ReceiveFSM = pEventsClient_ReceiveFSM;
+	this->pTransport_ReceiveFSM = pTransport_ReceiveFSM;
+	this->cmp = cmp;
 	p_travel_speed = 1.0;
 	p_tf_frame_robot = "base_link";
 	p_wp_tolerance = 1.0;
@@ -50,20 +52,40 @@ void LocalWaypointDriverClient_ReceiveFSM::setupNotifications()
 	pManagementClient_ReceiveFSM->registerNotification("Receiving", ieHandler, "InternalStateChange_To_LocalWaypointDriverClient_ReceiveFSM_Receiving_Ready", "ManagementClient_ReceiveFSM");
 	registerNotification("Receiving_Ready", pManagementClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ManagementClient_ReceiveFSM_Receiving_Ready", "LocalWaypointDriverClient_ReceiveFSM");
 	registerNotification("Receiving", pManagementClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ManagementClient_ReceiveFSM_Receiving", "LocalWaypointDriverClient_ReceiveFSM");
-	iop::Config cfg("~LocalWaypointDriverClient");
+}
+
+
+void LocalWaypointDriverClient_ReceiveFSM::setupIopConfiguration()
+{
+	iop::Config cfg(cmp, "LocalWaypointDriverClient");
+	cfg.declare_param<double>("travel_speed", p_travel_speed, true,
+		rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
+		"Initial travel speed used if a waypoint is set. This value can be changed by cmd_speed topic.",
+		"Default: 1.0");
+	cfg.declare_param<std::string>("tf_frame_robot", p_tf_frame_robot, true,
+		rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
+		"TF frame id of the robot.",
+		"Default: 'base_link'");
+	// cfg.declare_param<double>("waypoint_tolerance", p_wp_tolerance, true,
+	// 	rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
+	// 	"currently not used.",
+	// 	"Default: 1.0");
+	cfg.declare_param<double>("hz", p_hz, true,
+		rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
+		"Sets how often the reports are requested. If use_queries is True hz must be greather then 0. In this case each time a Query message is sent to get a report. If use_queries is False an event is created to get Reports. In this case 0 disables the rate and an event of type on_change will be created.",
+		"Default: 0.0");
 	cfg.param("travel_speed", p_travel_speed, p_travel_speed);
 	cfg.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
 //	cfg.param("waypoint_tolerance", p_wp_tolerance, p_wp_tolerance);
-	cfg.param("hz", p_hz, p_hz, false, false);
-	//ROS_INFO_NAMED("LocalWaypointDriverClient", "  waypoint_tolerance: %.2f", p_wp_tolerance);
+	cfg.param("hz", p_hz, p_hz, false);
 	//create ROS subscriber
-	// p_sub_path = cfg.subscribe<nav_msgs::Path>("cmd_path", 1, &LocalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
-	p_sub_pose = cfg.subscribe<geometry_msgs::PoseStamped>("cmd_local_pose", 1, &LocalWaypointDriverClient_ReceiveFSM::pCmdPose, this);
-	p_sub_speed = cfg.subscribe<std_msgs::Float32>("cmd_speed", 1, &LocalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this);
-	p_pub_path = cfg.advertise<nav_msgs::Path>("local_waypath", 5, true);
+	// p_sub_path = cfg.create_subscription<nav_msgs::Path>("cmd_path", 1, &LocalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
+	p_sub_pose = cfg.create_subscription<geometry_msgs::msg::PoseStamped>("cmd_local_pose", 1, std::bind(&LocalWaypointDriverClient_ReceiveFSM::pCmdPose, this, std::placeholders::_1));
+	p_sub_speed = cfg.create_subscription<std_msgs::msg::Float32>("cmd_speed", 1, std::bind(&LocalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this, std::placeholders::_1));
+	p_pub_path = cfg.create_publisher<nav_msgs::msg::Path>("local_waypath", 5);
 	// initialize the control layer, which handles the access control staff
-	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
-	slave.add_supported_service(*this, "urn:jaus:jss:mobility:LocalWaypointDriver", 1, 0);
+	auto slave = Slave::get_instance(cmp);
+	slave->add_supported_service(*this, "urn:jaus:jss:mobility:LocalWaypointDriver", 1, 0);
 }
 
 void LocalWaypointDriverClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)
@@ -72,7 +94,7 @@ void LocalWaypointDriverClient_ReceiveFSM::control_allowed(std::string service_u
 		p_remote_addr = component;
 		p_has_access = true;
 	} else {
-		ROS_WARN_STREAM("[LocalWaypointDriverClient] unexpected control allowed for " << service_uri << " received, ignored!");
+		RCLCPP_WARN(logger, "unexpected control allowed for %s received, ignored!", service_uri.c_str());
 	}
 }
 
@@ -91,13 +113,14 @@ void LocalWaypointDriverClient_ReceiveFSM::create_events(std::string service_uri
 {
 	if (by_query) {
 		if (p_hz > 0) {
-			ROS_INFO_NAMED("LocalWaypointDriverClient", "create QUERY timer to get local waypoint from %s with %.2fHz", component.str().c_str(), p_hz);
-			p_query_timer = p_nh.createTimer(ros::Duration(1.0 / p_hz), &LocalWaypointDriverClient_ReceiveFSM::pQueryCallback, this);
+			RCLCPP_INFO(logger, "create QUERY timer to get local waypoint from %s with %.2fHz", component.str().c_str(), p_hz);
+			p_query_timer.set_rate(p_hz);
+			p_query_timer.start();
 		} else {
-			ROS_WARN_NAMED("LocalWaypointDriverClient", "invalid hz %.2f for QUERY timer to get local waypoint from %s", p_hz, component.str().c_str());
+			RCLCPP_WARN(logger, "invalid hz %.2f for QUERY timer to get local waypoint from %s", p_hz, component.str().c_str());
 		}
 	} else {
-		ROS_INFO_NAMED("LocalWaypointDriverClient", "create EVENT to get local waypoint from %s with %.2fHz", component.str().c_str(), p_hz);
+		RCLCPP_INFO(logger, "create EVENT to get local waypoint from %s with %.2fHz", component.str().c_str(), p_hz);
 		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_local_waypoint_msg, p_hz);
 		sendJausMessage(p_query_local_waypoint_msg, component);
 	}
@@ -108,12 +131,12 @@ void LocalWaypointDriverClient_ReceiveFSM::cancel_events(std::string service_uri
 	if (by_query) {
 		p_query_timer.stop();
 	} else {
-		ROS_INFO_NAMED("LocalWaypointDriverClient", "cancel EVENT for local waypoint by %s", component.str().c_str());
+		RCLCPP_INFO(logger, "cancel EVENT for local waypoint by %s", component.str().c_str());
 		pEventsClient_ReceiveFSM->cancel_event(*this, component, p_query_local_waypoint_msg);
 	}
 }
 
-void LocalWaypointDriverClient_ReceiveFSM::pQueryCallback(const ros::TimerEvent& event)
+void LocalWaypointDriverClient_ReceiveFSM::pQueryCallback()
 {
 	if (p_remote_addr.get() != 0) {
 		sendJausMessage(p_query_local_waypoint_msg, p_remote_addr);
@@ -155,16 +178,17 @@ void LocalWaypointDriverClient_ReceiveFSM::handleReportLocalWaypointAction(Repor
 	if (wprec->isWaypointToleranceValid()) {
 	}
 
-	ROS_DEBUG_NAMED("LocalWaypointDriverClient", "currentWaypointAction from %s - x: %.2f, y: %.2f, z: %.2f", sender.str().c_str(), x, y, z);
-	ROS_DEBUG_NAMED("LocalWaypointDriverClient", "    roll: %.2f, pitch: %.2f, yaw: %.2f", roll, pitch, yaw);
+	RCLCPP_DEBUG(logger, "currentWaypointAction from %s - x: %.2f, y: %.2f, z: %.2f", sender.str().c_str(), x, y, z);
+	RCLCPP_DEBUG(logger, "    roll: %.2f, pitch: %.2f, yaw: %.2f", roll, pitch, yaw);
 
-	nav_msgs::Path path;
-	path.header.stamp = ros::Time::now();
+	auto path = nav_msgs::msg::Path();
+	path.header.stamp = cmp->now();
 	path.header.frame_id = this->p_tf_frame_robot;
 
-	tf::Quaternion quat = tf::createQuaternionFromRPY(roll, pitch, yaw);
+	tf2::Quaternion quat;
+	quat.setRPY(roll, pitch, yaw);
 
-	geometry_msgs::PoseStamped pose;
+	auto pose = geometry_msgs::msg::PoseStamped();
 	pose.header = path.header;
 	pose.pose.position.x = x;
 	pose.pose.position.y = y;
@@ -174,45 +198,44 @@ void LocalWaypointDriverClient_ReceiveFSM::handleReportLocalWaypointAction(Repor
 	pose.pose.orientation.z = quat.z();
 	pose.pose.orientation.w = quat.w();
 	path.poses.push_back(pose);
-	this->p_pub_path.publish(path);
+	this->p_pub_path->publish(path);
 }
 
 void LocalWaypointDriverClient_ReceiveFSM::handleReportTravelSpeedAction(ReportTravelSpeed msg, Receive::Body::ReceiveRec transportData)
 {
 	JausAddress sender = transportData.getAddress();
 	p_travel_speed = msg.getBody()->getTravelSpeedRec()->getSpeed();
-	ROS_DEBUG_NAMED("LocalWaypointDriverClient", "currentReportTravelSpeedAction from %s, speed: %.2f", sender.str().c_str(), p_travel_speed);
+	RCLCPP_DEBUG(logger, "currentReportTravelSpeedAction from %s, speed: %.2f", sender.str().c_str(), p_travel_speed);
 }
 
-void LocalWaypointDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::Path::ConstPtr& msg)
+void LocalWaypointDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::msg::Path::SharedPtr msg)
 {
 	if (p_has_access) {
 		SetLocalWaypoint cmd;
-		geometry_msgs::PointStamped point_out;
 		bool transformed = false;
 		float speed = p_travel_speed;
 		if (msg->poses.size() > 0) {
 			try {
-				geometry_msgs::PoseStamped pose_in = msg->poses[0];
+				auto pose_in = msg->poses[0];
 				if (pose_in.header.frame_id.empty()) {
 					pose_in.header = msg->header;
 				}
-				tfListener.waitForTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(0.3));
-				geometry_msgs::PoseStamped pose_out;
-				tfListener.transformPose(p_tf_frame_robot, pose_in, pose_out);
+				p_tf_buffer->lookupTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration(0.3));
+				auto pose_out = geometry_msgs::msg::PoseStamped();
+				p_tf_buffer->transform(pose_in, pose_out, p_tf_frame_robot);
 				cmd.getBody()->getLocalWaypointRec()->setX(pose_out.pose.position.x);
 				cmd.getBody()->getLocalWaypointRec()->setY(pose_out.pose.position.y);
 				cmd.getBody()->getLocalWaypointRec()->setZ(pose_out.pose.position.z);
 				double roll, pitch, yaw;
-				tf::Quaternion quat(pose_out.pose.orientation.x, pose_out.pose.orientation.y, pose_out.pose.orientation.z, pose_out.pose.orientation.w);
-				tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+				tf2::Quaternion quat(pose_out.pose.orientation.x, pose_out.pose.orientation.y, pose_out.pose.orientation.z, pose_out.pose.orientation.w);
+				tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 				if (!isnan(yaw)) {
 					cmd.getBody()->getLocalWaypointRec()->setRoll(roll);
 					cmd.getBody()->getLocalWaypointRec()->setPitch(pitch);
 					cmd.getBody()->getLocalWaypointRec()->setYaw(yaw);
 				}
 				transformed = true;
-			} catch (tf::TransformException &ex) {
+			} catch (tf2::TransformException &ex) {
 				printf ("Failure %s\n", ex.what()); //Print exception which was caught
 				speed = 0.0;
 			}
@@ -220,11 +243,11 @@ void LocalWaypointDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::Path::ConstP
 			speed = 0.0;
 		}
 		SetTravelSpeed cmd_speed;
-		ROS_INFO_NAMED("LocalWaypointDriverClient", "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
+		RCLCPP_INFO(logger, "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
 		cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
 		sendJausMessage(cmd_speed, p_remote_addr);
 		if (transformed || msg->poses.size() == 0) {
-			ROS_INFO_NAMED("LocalWaypointDriverClient", "send Waypoint from Path [x: %.2f, y: %.2f] to %s",
+			RCLCPP_INFO(logger, "send Waypoint from Path [x: %.2f, y: %.2f] to %s",
 					cmd.getBody()->getLocalWaypointRec()->getX(), cmd.getBody()->getLocalWaypointRec()->getY(),
 					p_remote_addr.str().c_str());
 			sendJausMessage(cmd, p_remote_addr);
@@ -232,61 +255,60 @@ void LocalWaypointDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::Path::ConstP
 	}
 }
 
-void LocalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::PoseStamped::ConstPtr& msg)
+void LocalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
 {
 	if (p_has_access) {
 		SetLocalWaypoint cmd;
-		geometry_msgs::PointStamped point_out;
 		SetTravelSpeed cmd_speed;
 		float speed = p_travel_speed;
 		try {
-			geometry_msgs::PoseStamped pose_in = *msg;
-			geometry_msgs::PoseStamped pose_out;
+			auto pose_in = *msg;
+			auto pose_out = geometry_msgs::msg::PoseStamped();
 			if (!pose_in.header.frame_id.empty() && !p_tf_frame_robot.empty()) {
-				tfListener.waitForTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, ros::Duration(0.3));
-				tfListener.transformPose(p_tf_frame_robot, pose_in, pose_out);
+				p_tf_buffer->lookupTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration(0.3));
+				p_tf_buffer->transform(pose_in, pose_out, p_tf_frame_robot);
 			} else {
 				pose_out = pose_in;
 				if (p_tf_frame_robot.empty()) {
-					ROS_WARN_NAMED("LocalWaypointDriverClient", "p_tf_frame_robot is empty, forward local pose without transform to %s", p_remote_addr.str().c_str());
+					RCLCPP_WARN(logger, "p_tf_frame_robot is empty, forward local pose without transform to %s", p_remote_addr.str().c_str());
 				} else if (pose_in.header.frame_id.empty()) {
-					ROS_WARN_NAMED("LocalWaypointDriverClient", "pose_in.header.frame_id is empty, forward local pose without transform to %s", p_remote_addr.str().c_str());
+					RCLCPP_WARN(logger, "pose_in.header.frame_id is empty, forward local pose without transform to %s", p_remote_addr.str().c_str());
 				}
 			}
 			cmd.getBody()->getLocalWaypointRec()->setX(pose_out.pose.position.x);
 			cmd.getBody()->getLocalWaypointRec()->setY(pose_out.pose.position.y);
 			cmd.getBody()->getLocalWaypointRec()->setZ(pose_out.pose.position.z);
 			double roll, pitch, yaw;
-			tf::Quaternion quat(pose_out.pose.orientation.x, pose_out.pose.orientation.y, pose_out.pose.orientation.z, pose_out.pose.orientation.w);
-			tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+			tf2::Quaternion quat(pose_out.pose.orientation.x, pose_out.pose.orientation.y, pose_out.pose.orientation.z, pose_out.pose.orientation.w);
+			tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 			if (!isnan(yaw)) {
 				cmd.getBody()->getLocalWaypointRec()->setRoll(roll);
 				cmd.getBody()->getLocalWaypointRec()->setPitch(pitch);
 				cmd.getBody()->getLocalWaypointRec()->setYaw(yaw);
 			}
-			ROS_INFO_NAMED("LocalWaypointDriverClient", "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
+			RCLCPP_INFO(logger, "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
 			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
 			sendJausMessage(cmd_speed, p_remote_addr);
-			ROS_INFO_NAMED("LocalWaypointDriverClient", "send Waypoint from Pose [x: %.2f, y: %.2f] to %s",
+			RCLCPP_INFO(logger, "send Waypoint from Pose [x: %.2f, y: %.2f] to %s",
 					cmd.getBody()->getLocalWaypointRec()->getX(), cmd.getBody()->getLocalWaypointRec()->getY(),
 					p_remote_addr.str().c_str());
 			sendJausMessage(cmd, p_remote_addr);
-		} catch (tf::TransformException &ex) {
+		} catch (tf2::TransformException &ex) {
 			printf ("Failure %s\n", ex.what()); //Print exception which was caught
 			speed = 0.0;
-			ROS_INFO_NAMED("LocalWaypointDriverClient", "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
+			RCLCPP_INFO(logger, "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
 			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
 			sendJausMessage(cmd_speed, p_remote_addr);
 		}
 	}
 }
 
-void LocalWaypointDriverClient_ReceiveFSM::pCmdSpeed(const std_msgs::Float32::ConstPtr& msg)
+void LocalWaypointDriverClient_ReceiveFSM::pCmdSpeed(const std_msgs::msg::Float32::SharedPtr msg)
 {
 	if (p_has_access) {
 		p_travel_speed = msg->data;
 		SetTravelSpeed cmd;
-		ROS_DEBUG_NAMED("LocalWaypointDriverClient", "set speed to %.2f on %s", p_travel_speed, p_remote_addr.str().c_str());
+		RCLCPP_DEBUG(logger, "set speed to %.2f on %s", p_travel_speed, p_remote_addr.str().c_str());
 		cmd.getBody()->getTravelSpeedRec()->setSpeed(p_travel_speed);
 		sendJausMessage(cmd, p_remote_addr);
 	}
@@ -295,4 +317,4 @@ void LocalWaypointDriverClient_ReceiveFSM::pCmdSpeed(const std_msgs::Float32::Co
 
 
 
-};
+}

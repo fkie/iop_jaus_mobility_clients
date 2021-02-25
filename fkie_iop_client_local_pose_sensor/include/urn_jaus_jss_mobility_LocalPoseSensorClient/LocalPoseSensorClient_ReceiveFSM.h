@@ -33,18 +33,18 @@ along with this program; or you can read the full license at
 #include "InternalEvents/Receive.h"
 #include "InternalEvents/Send.h"
 
-#include "urn_jaus_jss_core_Transport/Transport_ReceiveFSM.h"
-#include "urn_jaus_jss_core_EventsClient/EventsClient_ReceiveFSM.h"
-#include "urn_jaus_jss_core_EventsClient/Messages/MessageSet.h"
 #include "urn_jaus_jss_core_AccessControlClient/AccessControlClient_ReceiveFSM.h"
+#include "urn_jaus_jss_core_EventsClient/EventsClient_ReceiveFSM.h"
+#include "urn_jaus_jss_core_Transport/Transport_ReceiveFSM.h"
 
-#include <ros/ros.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <nav_msgs/Odometry.h>
 
 #include "LocalPoseSensorClient_ReceiveFSM_sm.h"
+#include <rclcpp/rclcpp.hpp>
+#include <fkie_iop_component/iop_component.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <fkie_iop_ocu_slavelib/SlaveHandlerInterface.h>
 #include <fkie_iop_events/EventHandlerInterface.h>
 
@@ -55,11 +55,12 @@ namespace urn_jaus_jss_mobility_LocalPoseSensorClient
 class DllExport LocalPoseSensorClient_ReceiveFSM : public JTS::StateMachine, public iop::ocu::SlaveHandlerInterface, public iop::EventHandlerInterface
 {
 public:
-	LocalPoseSensorClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM);
+	LocalPoseSensorClient_ReceiveFSM(std::shared_ptr<iop::Component> cmp, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM);
 	virtual ~LocalPoseSensorClient_ReceiveFSM();
 
 	/// Handle notifications on parent state changes
 	virtual void setupNotifications();
+	virtual void setupIopConfiguration();
 
 	/// Action Methods
 	virtual void handleReportLocalPoseAction(ReportLocalPose msg, Receive::Body::ReceiveRec transportData);
@@ -81,29 +82,30 @@ public:
 
 protected:
 
-    /// References to parent FSMs
-	urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM;
-	urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM;
+	/// References to parent FSMs
 	urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM;
+	urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM;
+	urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM;
 
+	std::shared_ptr<iop::Component> cmp;
+	rclcpp::Logger logger;
 	std::string p_tf_frame_odom;
 	std::string p_tf_frame_robot;
 	bool p_send_inverse_trafo;
 	double p_hz;
 
-	ros::NodeHandle p_nh;
-	ros::Timer p_query_timer;
+	iop::Timer p_query_timer;
 	tf2_ros::TransformBroadcaster p_tf_broadcaster;
-	ros::Publisher p_pub_odom;
-	ros::Publisher p_pub_pose;
+	rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr p_pub_odom;
+	rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr p_pub_pose;
 
 	urn_jaus_jss_mobility_LocalPoseSensorClient::QueryLocalPose p_query_local_pose_msg;
 	JausAddress p_remote_addr;
 	bool p_has_access;
-	void pQueryCallback(const ros::TimerEvent& event);
+	void pQueryCallback();
 
 };
 
-};
+}
 
 #endif // LOCALPOSESENSORCLIENT_RECEIVEFSM_H

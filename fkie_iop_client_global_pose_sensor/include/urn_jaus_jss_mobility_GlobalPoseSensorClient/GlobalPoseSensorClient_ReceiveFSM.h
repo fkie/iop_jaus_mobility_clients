@@ -30,24 +30,25 @@ along with this program; or you can read the full license at
 #include "JTSStateMachine.h"
 #include "urn_jaus_jss_mobility_GlobalPoseSensorClient/Messages/MessageSet.h"
 #include "urn_jaus_jss_mobility_GlobalPoseSensorClient/InternalEvents/InternalEventsSet.h"
-#include "urn_jaus_jss_core_AccessControlClient/AccessControlClient_ReceiveFSM.h"
 
 #include "InternalEvents/Receive.h"
 #include "InternalEvents/Send.h"
 
-#include "urn_jaus_jss_core_Transport/Transport_ReceiveFSM.h"
+#include "urn_jaus_jss_core_AccessControlClient/AccessControlClient_ReceiveFSM.h"
 #include "urn_jaus_jss_core_EventsClient/EventsClient_ReceiveFSM.h"
-#include "urn_jaus_jss_core_EventsClient/Messages/MessageSet.h"
+#include "urn_jaus_jss_core_Transport/Transport_ReceiveFSM.h"
 
-
-#include <ros/ros.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <geometry_msgs/PoseStamped.h>
 
 #include "GlobalPoseSensorClient_ReceiveFSM_sm.h"
+#include <rclcpp/rclcpp.hpp>
+#include <fkie_iop_component/iop_component.hpp>
+
+#include <sensor_msgs/msg/imu.hpp>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+
 #include <fkie_iop_ocu_slavelib/SlaveHandlerInterface.h>
 #include <fkie_iop_events/EventHandlerInterface.h>
 
@@ -57,11 +58,12 @@ namespace urn_jaus_jss_mobility_GlobalPoseSensorClient
 class DllExport GlobalPoseSensorClient_ReceiveFSM : public JTS::StateMachine, public iop::ocu::SlaveHandlerInterface, public iop::EventHandlerInterface
 {
 public:
-	GlobalPoseSensorClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM);
+	GlobalPoseSensorClient_ReceiveFSM(std::shared_ptr<iop::Component> cmp, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM);
 	virtual ~GlobalPoseSensorClient_ReceiveFSM();
 
 	/// Handle notifications on parent state changes
 	virtual void setupNotifications();
+	virtual void setupIopConfiguration();
 
 	/// Action Methods
 	virtual void handleReportGeomagneticPropertyAction(ReportGeomagneticProperty msg, Receive::Body::ReceiveRec transportData);
@@ -83,35 +85,37 @@ public:
 
 protected:
 
-    /// References to parent FSMs
-	urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM;
-	urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM;
+	/// References to parent FSMs
 	urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM;
+	urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM;
+	urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM;
+
+	std::shared_ptr<iop::Component> cmp;
+	rclcpp::Logger logger;
 	std::string p_tf_frame_world;
 	std::string p_tf_frame_anchor;
 	std::string p_tf_frame_robot;
 	tf2_ros::TransformBroadcaster p_tf_broadcaster;
-	geometry_msgs::TransformStamped p_tf_anchor;
+	geometry_msgs::msg::TransformStamped p_tf_anchor;
 	double p_anchor_northing, p_anchor_easting, p_anchor_altitude;
 	bool p_publish_world_anchor;
 
-	ros::NodeHandle p_nh;
-	ros::Timer p_query_timer;
-	ros::Publisher p_pub_navsatfix;
-	ros::Publisher p_pub_imu;
-	ros::Publisher p_pub_pose;
-	ros::Subscriber p_sub_anchorfix;
+	iop::Timer p_query_timer;
+	rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr p_pub_navsatfix;
+	rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr p_pub_imu;
+	rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr p_pub_pose;
+	rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr p_sub_anchorfix;
 	double p_hz;
 
 	urn_jaus_jss_mobility_GlobalPoseSensorClient::QueryGlobalPose p_query_global_pose_msg;
 	JausAddress p_remote_addr;
 	bool p_has_access;
-	void pQueryCallback(const ros::TimerEvent& event);
-	void anchorFixReceived(const sensor_msgs::NavSatFix::ConstPtr& fix);
+	void pQueryCallback();
+	void anchorFixReceived(const sensor_msgs::msg::NavSatFix::SharedPtr fix);
 
 
 };
 
-};
+}
 
 #endif // GLOBALPOSESENSORCLIENT_RECEIVEFSM_H

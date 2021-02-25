@@ -7,13 +7,9 @@ Forwards a list of local waypoints to IOP compliant robot.
 
 #### Parameter:
 
-_tf_frame_world (str_, Default: "/world")
+_tf_frame_robot (str_, Default: "base_link")
 
 > TF frame id used in ROS for local coordinates.
-
-_utm_zone (str_, Default: "32U")
-
-> The UTM zone is used for translation of ROS local position coordinates into Lat/Lon coordinates.
 
 _travel_speed (float_, Default: 1.0)
 

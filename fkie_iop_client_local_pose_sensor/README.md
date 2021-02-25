@@ -9,11 +9,11 @@ The local position received from IOP complient robot is published as ```Tf```, `
 
 _tf_frame_odom (str_, Default: "odom")
 
-> Defines the odometry frame id. This parameter is only regarded if _source_type_ is *0*.
+> Defines the odometry frame id.
 
 _tf_frame_robot (str_, Default: "base_link")
 
-> Defines the robot frame id. This parameter is only regarded if _source_type_ is *0*.
+> Defines the robot frame id.
 
 _hz (float_, Default: 10.0)
 

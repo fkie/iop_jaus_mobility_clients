@@ -22,8 +22,7 @@ along with this program; or you can read the full license at
 
 #include <fkie_iop_ocu_slavelib/Slave.h>
 #include "urn_jaus_jss_mobility_PrimitiveDriverClient/PrimitiveDriverClient_ReceiveFSM.h"
-#include <fkie_iop_component/iop_config.h>
-
+#include <fkie_iop_component/iop_config.hpp>
 
 
 using namespace JTS;
@@ -34,7 +33,8 @@ namespace urn_jaus_jss_mobility_PrimitiveDriverClient
 
 
 
-PrimitiveDriverClient_ReceiveFSM::PrimitiveDriverClient_ReceiveFSM(urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM)
+PrimitiveDriverClient_ReceiveFSM::PrimitiveDriverClient_ReceiveFSM(std::shared_ptr<iop::Component> cmp, urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM)
+: logger(cmp->get_logger().get_child("PrimitiveDriverClient"))
 {
 
 	/*
@@ -44,10 +44,11 @@ PrimitiveDriverClient_ReceiveFSM::PrimitiveDriverClient_ReceiveFSM(urn_jaus_jss_
 	 */
 	context = new PrimitiveDriverClient_ReceiveFSMContext(*this);
 
-	this->pTransport_ReceiveFSM = pTransport_ReceiveFSM;
-	this->pEventsClient_ReceiveFSM = pEventsClient_ReceiveFSM;
-	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
 	this->pManagementClient_ReceiveFSM = pManagementClient_ReceiveFSM;
+	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
+	this->pEventsClient_ReceiveFSM = pEventsClient_ReceiveFSM;
+	this->pTransport_ReceiveFSM = pTransport_ReceiveFSM;
+	this->cmp = cmp;
 	p_has_access = false;
 	p_use_stamped = true;
 	p_invert_yaw = true;
@@ -69,7 +70,28 @@ void PrimitiveDriverClient_ReceiveFSM::setupNotifications()
 	pManagementClient_ReceiveFSM->registerNotification("Receiving", ieHandler, "InternalStateChange_To_PrimitiveDriverClient_ReceiveFSM_Receiving_Ready", "ManagementClient_ReceiveFSM");
 	registerNotification("Receiving_Ready", pManagementClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ManagementClient_ReceiveFSM_Receiving_Ready", "PrimitiveDriverClient_ReceiveFSM");
 	registerNotification("Receiving", pManagementClient_ReceiveFSM->getHandler(), "InternalStateChange_To_ManagementClient_ReceiveFSM_Receiving", "PrimitiveDriverClient_ReceiveFSM");
-	iop::Config cfg("~PrimitiveDriverClient");
+}
+
+
+void PrimitiveDriverClient_ReceiveFSM::setupIopConfiguration()
+{
+	iop::Config cfg(cmp, "PrimitiveDriverClient");
+	cfg.declare_param<bool>("invert_yaw", p_invert_yaw, true,
+		rcl_interfaces::msg::ParameterType::PARAMETER_BOOL,
+		"Inverts the yaw control orientation.",
+		"Default: true");
+	cfg.declare_param<bool>("use_stamped", p_use_stamped, true,
+		rcl_interfaces::msg::ParameterType::PARAMETER_BOOL,
+		"If true use geometry_msgs::TwistStamped instead of geometry_msgs::Twist to publish the commands.",
+		"Default: true");
+	cfg.declare_param<double>("max_linear", p_max_linear, true,
+		rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
+		"The maximal velocity in twist message. Based on this value the received velocity will be scaled to maximal effort of 100 percent.",
+		"Default: 1.0");
+	cfg.declare_param<double>("max_angular", p_max_angular, true,
+		rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
+		"The maximal angular velocity in twist message. Based on this value the received velocity will be scaled to maximal effort of 100 percent.",
+		"Default: 1.5");
 	cfg.param("use_stamped", p_use_stamped, true);
 	cfg.param("invert_yaw", p_invert_yaw, true);
 	double max_linear, max_angular;
@@ -84,13 +106,13 @@ void PrimitiveDriverClient_ReceiveFSM::setupNotifications()
 	if (!p_invert_yaw) p_invert_yaw_factor = 1.0;
 	//create ROS subscriber
 	if (p_use_stamped) {
-		p_cmd_sub = cfg.subscribe<geometry_msgs::TwistStamped>("joy_cmd_vel", 1, &PrimitiveDriverClient_ReceiveFSM::cmdStampedReceived, this);
+		p_cmd_stamped_sub = cfg.create_subscription<geometry_msgs::msg::TwistStamped>("joy_cmd_vel", 1, std::bind(&PrimitiveDriverClient_ReceiveFSM::cmdStampedReceived, this, std::placeholders::_1));
 	} else {
-		p_cmd_sub = cfg.subscribe<geometry_msgs::Twist>("joy_cmd_vel", 1, &PrimitiveDriverClient_ReceiveFSM::cmdReceived, this);
+		p_cmd_sub = cfg.create_subscription<geometry_msgs::msg::Twist>("joy_cmd_vel", 1, std::bind(&PrimitiveDriverClient_ReceiveFSM::cmdReceived, this, std::placeholders::_1));
 	}
 	// initialize the control layer, which handles the access control staff
-	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
-	slave.add_supported_service(*this, "urn:jaus:jss:mobility:PrimitiveDriver", 1, 0);
+	auto slave = Slave::get_instance(cmp);
+	slave->add_supported_service(*this, "urn:jaus:jss:mobility:PrimitiveDriver", 1, 0);
 }
 
 void PrimitiveDriverClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)
@@ -99,7 +121,7 @@ void PrimitiveDriverClient_ReceiveFSM::control_allowed(std::string service_uri, 
 		p_remote_addr = component;
 		p_has_access = true;
 	} else {
-		ROS_WARN_STREAM("[ClientPrimitiveDriver] unexpected control allowed for " << service_uri << " received, ignored!");
+		RCLCPP_WARN(logger, "unexpected control allowed for %s received, ignored!", service_uri.c_str());
 	}
 }
 
@@ -120,7 +142,7 @@ void PrimitiveDriverClient_ReceiveFSM::handleReportWrenchEffortAction(ReportWren
 	/// Insert User Code HERE
 }
 
-void PrimitiveDriverClient_ReceiveFSM::cmdReceived(const geometry_msgs::Twist::ConstPtr& cmd)
+void PrimitiveDriverClient_ReceiveFSM::cmdReceived(const geometry_msgs::msg::Twist::SharedPtr cmd)
 {
 	if (p_has_access) {
 		SetWrenchEffort msg;
@@ -136,7 +158,7 @@ void PrimitiveDriverClient_ReceiveFSM::cmdReceived(const geometry_msgs::Twist::C
 }
 
 
-void PrimitiveDriverClient_ReceiveFSM::cmdStampedReceived(const geometry_msgs::TwistStamped::ConstPtr& cmd)
+void PrimitiveDriverClient_ReceiveFSM::cmdStampedReceived(const geometry_msgs::msg::TwistStamped::SharedPtr cmd)
 {
 	if (p_has_access) {
 		SetWrenchEffort msg;
@@ -163,4 +185,4 @@ double PrimitiveDriverClient_ReceiveFSM::p_scale(double value, double max)
 	return result;
 }
 
-};
+}

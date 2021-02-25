@@ -13,7 +13,7 @@ _tf_frame_world (str_, Default: "world")
 
 _tf_frame_anchor (str_, Default: "anchor")
 
-> TF frame id for achor between `world` and `robot` frame. It is usefull since for visualization in Rviz.
+> TF frame id for achor between `world` and `robot` frame. It is usefull for visualization in Rviz.
 
 _tf_frame_robot (str_, Default: "base_link")
 
@@ -37,7 +37,7 @@ _anchor_altitude (double_, Default: 0.0)
 
 _publish_world_anchor (bool_ Default: true)
 
-> Enables the publishing of /world to anchor tf. You can publish this disable the publishing of this tf by this service and publish tf itself.
+> Enables the publishing of /world to anchor tf. You can disable the publishing of this tf by this service and publish tf itself.
 
 #### Publisher:
 
