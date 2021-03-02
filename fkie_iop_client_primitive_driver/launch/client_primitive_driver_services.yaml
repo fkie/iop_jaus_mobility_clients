@@ -1,0 +1,10 @@
+iop_client_primitive_driver:
+  ros__parameters:
+    iop_services:
+      - fkie_iop_discovery/DiscoveryClient
+      - fkie_iop_platform_state/PlatformStateClient
+      - fkie_iop_client_primitive_driver/PrimitiveDriverClient
+    Events.timeout: 5
+    DiscoveryClient:
+      register_own_services: false
+      enable_ros_interface: true

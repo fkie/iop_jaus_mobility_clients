@@ -1,10 +1,5 @@
-<library path="libfkie_iop_client_velocity_state_sensor">
-  <class name="VelocityStateSensorClient" type="iop::VelocityStateSensorClientPlugin" base_class_type="iop::PluginInterface">
-    <description>
-      VelocityStateSensor client Service Plugin, used e.g. by OCU
-    </description>
-    <iop_service name="VelocityStateSensorClient" id="urn:jaus:jss:mobility:VelocityStateSensorClient" version="1.0">
-      <inherits_from id="urn:jaus:jss:core:EventsClient" min_version="1.0"/>
-    </iop_service>
-  </class>
+<library path="fkie_iop_client_velocity_state_sensor">
+	<class name="VelocityStateSensorClient" type="urn_jaus_jss_mobility_VelocityStateSensorClient::VelocityStateSensorClientService" base_class_type="JTS::Service"
+		id="urn:jaus:jss:mobility:VelocityStateSensorClient" version="1.0">
+	</class>
 </library>
