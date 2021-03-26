@@ -21,6 +21,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 ###############
 ## setup IOP ##
@@ -58,6 +59,7 @@ set(dependencies
   nav_msgs
   sensor_msgs
   tf2
+  tf2_ros
 )
 
 include_directories(
