@@ -30,7 +30,7 @@ _hz (float_ , Default: 0.0)
 
 #### Publisher:
 
-_global_waypoint (nav_msgs::Path)_
+_global_waypoint (nav_msgs::msg::Path)_
 
 > Current waypoint reported by GlobalWaypointDriver or GlobalWaypointListDriver. If no waypoints are active the path is empty.
 
@@ -45,6 +45,6 @@ _cmd_fix (sensor_msgs::NavSatFix)_
 
 > Command for global waypoint without orientation.
 
-_cmd_speed (std_msgs::Float32)_
+_cmd_speed (std_msgs::msg::Float32)_
 
 > Set the current travel speed.

@@ -22,7 +22,7 @@ _hz (float_ , Default: 0.0)
 
 #### Publisher:
 
-_local_waypath (nav_msgs::Path)_
+_local_waypath (nav_msgs::msg::Path)_
 
 > Current waypoint reported by LocalWaypointDriver or LocalWaypointListDriver. If no waypoints are active the path is empty.
 
@@ -33,6 +33,6 @@ _cmd_local_pose (geometry_msgs::PoseStamped)_
 
 > Command for local waypoint. The coordinates are transformed to the local frame id.
 
-_cmd_speed (std_msgs::Float32)_
+_cmd_speed (std_msgs::msg::Float32)_
 
 > Set the current travel speed.

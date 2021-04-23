@@ -79,7 +79,7 @@ void LocalWaypointDriverClient_ReceiveFSM::setupIopConfiguration()
 //	cfg.param("waypoint_tolerance", p_wp_tolerance, p_wp_tolerance);
 	cfg.param("hz", p_hz, p_hz, false);
 	//create ROS subscriber
-	// p_sub_path = cfg.create_subscription<nav_msgs::Path>("cmd_path", 1, &LocalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
+	// p_sub_path = cfg.create_subscription<nav_msgs::msg::Path>("cmd_path", 1, &LocalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
 	p_sub_pose = cfg.create_subscription<geometry_msgs::msg::PoseStamped>("cmd_local_pose", 1, std::bind(&LocalWaypointDriverClient_ReceiveFSM::pCmdPose, this, std::placeholders::_1));
 	p_sub_speed = cfg.create_subscription<std_msgs::msg::Float32>("cmd_speed", 1, std::bind(&LocalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this, std::placeholders::_1));
 	p_pub_path = cfg.create_publisher<nav_msgs::msg::Path>("local_waypath", 5);

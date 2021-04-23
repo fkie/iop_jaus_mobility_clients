@@ -30,16 +30,16 @@ _hz (float_ , Default: 0.0)
 
 #### Publisher:
 
-_global_waypoint (nav_msgs::Path)_
+_global_waypoint (nav_msgs::msg::Path)_
 
 > Current waypoint reported by GlobalWaypointDriver or GlobalWaypointListDriver. If no waypoints are active the path is empty.
 
 #### Subscriber:
 
-_cmd_global_path (nav_msgs::Path)_
+_cmd_global_path (nav_msgs::msg::Path)_
 
 > Command with list of global waypoints. The coordinates are transformed to the global frame id and converted to Lat/Lon.
 
-_cmd_speed (std_msgs::Float32)_
+_cmd_speed (std_msgs::msg::Float32)_
 
 > Set the current travel speed.

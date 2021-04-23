@@ -83,7 +83,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupIopConfiguration()
 	cfg.param("hz", p_hz, p_hz, false);
 	//RCLCPP_INFO(logger, "  waypoint_tolerance: %.2f", p_wp_tolerance);
 	//create ROS subscriber
-	// p_sub_path = cfg.create_subscription<nav_msgs::Path>("cmd_path", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
+	// p_sub_path = cfg.create_subscription<nav_msgs::msg::Path>("cmd_path", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
 	p_sub_pose = cfg.create_subscription<geometry_msgs::msg::PoseStamped>("cmd_pose", 1, std::bind(&GlobalWaypointDriverClient_ReceiveFSM::pCmdPose, this, std::placeholders::_1));
 	p_sub_fix = cfg.create_subscription<sensor_msgs::msg::NavSatFix>("cmd_fix", 1, std::bind(&GlobalWaypointDriverClient_ReceiveFSM::pCmdFix, this, std::placeholders::_1));
 	p_sub_speed = cfg.create_subscription<std_msgs::msg::Float32>("cmd_speed", 1, std::bind(&GlobalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this, std::placeholders::_1));
