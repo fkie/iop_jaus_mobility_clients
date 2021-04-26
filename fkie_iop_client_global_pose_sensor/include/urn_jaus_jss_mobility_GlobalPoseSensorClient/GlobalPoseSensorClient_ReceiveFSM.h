@@ -75,11 +75,10 @@ public:
 	void event(JausAddress reporter, unsigned short query_msg_id, unsigned int reportlen, const unsigned char* reportdata);
 
 	/// SlaveHandlerInterface Methods
-	void control_allowed(std::string service_uri, JausAddress component, unsigned char authority);
-	void enable_monitoring_only(std::string service_uri, JausAddress component);
-	void access_deactivated(std::string service_uri, JausAddress component);
-	void create_events(std::string service_uri, JausAddress component, bool by_query=false);
-	void cancel_events(std::string service_uri, JausAddress component, bool by_query=false);
+	void register_events(JausAddress remote_addr, double hz);
+	void unregister_events(JausAddress remote_addr);
+	void send_query(JausAddress remote_addr);
+	void stop_query(JausAddress remote_addr);
 
 	GlobalPoseSensorClient_ReceiveFSMContext *context;
 
@@ -100,7 +99,6 @@ protected:
 	double p_anchor_northing, p_anchor_easting, p_anchor_altitude;
 	bool p_publish_world_anchor;
 
-	iop::Timer p_query_timer;
 	rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr p_pub_navsatfix;
 	rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr p_pub_imu;
 	rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr p_pub_pose;
@@ -108,9 +106,6 @@ protected:
 	double p_hz;
 
 	urn_jaus_jss_mobility_GlobalPoseSensorClient::QueryGlobalPose p_query_global_pose_msg;
-	JausAddress p_remote_addr;
-	bool p_has_access;
-	void pQueryCallback();
 	void anchorFixReceived(const sensor_msgs::msg::NavSatFix::SharedPtr fix);
 
 

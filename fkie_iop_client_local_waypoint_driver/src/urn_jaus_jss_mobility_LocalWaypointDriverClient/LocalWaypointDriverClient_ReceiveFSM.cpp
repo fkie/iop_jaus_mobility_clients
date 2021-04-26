@@ -16,8 +16,8 @@ namespace urn_jaus_jss_mobility_LocalWaypointDriverClient
 
 
 LocalWaypointDriverClient_ReceiveFSM::LocalWaypointDriverClient_ReceiveFSM(std::shared_ptr<iop::Component> cmp, urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM)
-: logger(cmp->get_logger().get_child("LocalWaypointDriverClient")),
-  p_query_timer(std::chrono::milliseconds(100), std::bind(&LocalWaypointDriverClient_ReceiveFSM::pQueryCallback, this), false)
+: SlaveHandlerInterface(cmp, "LocalWaypointDriverClient", 10.0),
+  logger(cmp->get_logger().get_child("LocalWaypointDriverClient"))
 {
 
 	/*
@@ -35,7 +35,6 @@ LocalWaypointDriverClient_ReceiveFSM::LocalWaypointDriverClient_ReceiveFSM(std::
 	p_travel_speed = 1.0;
 	p_tf_frame_robot = "base_link";
 	p_wp_tolerance = 1.0;
-	p_has_access = false;
 	p_hz = 0.0;
 }
 
@@ -84,63 +83,29 @@ void LocalWaypointDriverClient_ReceiveFSM::setupIopConfiguration()
 	p_sub_speed = cfg.create_subscription<std_msgs::msg::Float32>("cmd_speed", 1, std::bind(&LocalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this, std::placeholders::_1));
 	p_pub_path = cfg.create_publisher<nav_msgs::msg::Path>("local_waypath", 5);
 	// initialize the control layer, which handles the access control staff
-	auto slave = Slave::get_instance(cmp);
-	slave->add_supported_service(*this, "urn:jaus:jss:mobility:LocalWaypointDriver", 1, 0);
+	this->set_rate(p_hz);
+	this->set_supported_service(*this, "urn:jaus:jss:mobility:LocalWaypointDriver", 1, 0);
+	this->set_event_name("local waypoint");
 }
 
-void LocalWaypointDriverClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)
+void LocalWaypointDriverClient_ReceiveFSM::register_events(JausAddress remote_addr, double hz)
 {
-	if (service_uri.compare("urn:jaus:jss:mobility:LocalWaypointDriver") == 0) {
-		p_remote_addr = component;
-		p_has_access = true;
-	} else {
-		RCLCPP_WARN(logger, "unexpected control allowed for %s received, ignored!", service_uri.c_str());
-	}
+	pEventsClient_ReceiveFSM->create_event(*this, remote_addr, p_query_local_waypoint_msg, p_hz);
 }
 
-void LocalWaypointDriverClient_ReceiveFSM::enable_monitoring_only(std::string service_uri, JausAddress component)
+void LocalWaypointDriverClient_ReceiveFSM::unregister_events(JausAddress remote_addr)
 {
-	p_remote_addr = component;
+	pEventsClient_ReceiveFSM->cancel_event(*this, remote_addr, p_query_local_waypoint_msg);
+	stop_query(remote_addr);
 }
 
-void LocalWaypointDriverClient_ReceiveFSM::access_deactivated(std::string service_uri, JausAddress component)
+void LocalWaypointDriverClient_ReceiveFSM::send_query(JausAddress remote_addr)
 {
-	p_has_access = false;
-	p_remote_addr = JausAddress(0);
+	sendJausMessage(p_query_local_waypoint_msg, remote_addr);
 }
 
-void LocalWaypointDriverClient_ReceiveFSM::create_events(std::string service_uri, JausAddress component, bool by_query)
+void LocalWaypointDriverClient_ReceiveFSM::stop_query(JausAddress remote_addr)
 {
-	if (by_query) {
-		if (p_hz > 0) {
-			RCLCPP_INFO(logger, "create QUERY timer to get local waypoint from %s with %.2fHz", component.str().c_str(), p_hz);
-			p_query_timer.set_rate(p_hz);
-			p_query_timer.start();
-		} else {
-			RCLCPP_WARN(logger, "invalid hz %.2f for QUERY timer to get local waypoint from %s", p_hz, component.str().c_str());
-		}
-	} else {
-		RCLCPP_INFO(logger, "create EVENT to get local waypoint from %s with %.2fHz", component.str().c_str(), p_hz);
-		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_local_waypoint_msg, p_hz);
-		sendJausMessage(p_query_local_waypoint_msg, component);
-	}
-}
-
-void LocalWaypointDriverClient_ReceiveFSM::cancel_events(std::string service_uri, JausAddress component, bool by_query)
-{
-	if (by_query) {
-		p_query_timer.stop();
-	} else {
-		RCLCPP_INFO(logger, "cancel EVENT for local waypoint by %s", component.str().c_str());
-		pEventsClient_ReceiveFSM->cancel_event(*this, component, p_query_local_waypoint_msg);
-	}
-}
-
-void LocalWaypointDriverClient_ReceiveFSM::pQueryCallback()
-{
-	if (p_remote_addr.get() != 0) {
-		sendJausMessage(p_query_local_waypoint_msg, p_remote_addr);
-	}
 }
 
 void LocalWaypointDriverClient_ReceiveFSM::event(JausAddress sender, unsigned short query_msg_id, unsigned int reportlen, const unsigned char* reportdata)

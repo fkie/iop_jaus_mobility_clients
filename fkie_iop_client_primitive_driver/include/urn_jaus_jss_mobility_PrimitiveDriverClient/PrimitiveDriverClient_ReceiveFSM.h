@@ -70,11 +70,10 @@ public:
 	/// Guard Methods
 
 	/// SlaveHandlerInterface Methods
-	void control_allowed(std::string service_uri, JausAddress component, unsigned char authority);
-	void enable_monitoring_only(std::string service_uri, JausAddress component);
-	void access_deactivated(std::string service_uri, JausAddress component);
-	void create_events(std::string service_uri, JausAddress component, bool by_query=false) {}
-	void cancel_events(std::string service_uri, JausAddress component, bool by_query=false) {}
+	void register_events(JausAddress remote_addr, double hz);
+	void unregister_events(JausAddress remote_addr);
+	void send_query(JausAddress remote_addr);
+	void stop_query(JausAddress remote_addr);
 
 	PrimitiveDriverClient_ReceiveFSMContext *context;
 
@@ -88,8 +87,6 @@ protected:
 
 	std::shared_ptr<iop::Component> cmp;
 	rclcpp::Logger logger;
-	JausAddress p_remote_addr;
-	bool p_has_access;
 	rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr p_cmd_sub;
 	rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr p_cmd_stamped_sub;
 	bool p_use_stamped;

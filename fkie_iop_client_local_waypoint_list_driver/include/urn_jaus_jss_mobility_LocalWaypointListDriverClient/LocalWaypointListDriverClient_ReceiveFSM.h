@@ -58,10 +58,10 @@ public:
 
 	/// SlaveHandlerInterface Methods
 	void control_allowed(std::string service_uri, JausAddress component, unsigned char authority);
-	void enable_monitoring_only(std::string service_uri, JausAddress component);
-	void access_deactivated(std::string service_uri, JausAddress component);
-	void create_events(std::string service_uri, JausAddress component, bool by_query=false);
-	void cancel_events(std::string service_uri, JausAddress component, bool by_query=false);
+	void register_events(JausAddress remote_addr, double hz);
+	void unregister_events(JausAddress remote_addr);
+	void send_query(JausAddress remote_addr);
+	void stop_query(JausAddress remote_addr);
 	/// Guard Methods
 
 
@@ -79,8 +79,6 @@ protected:
 
 	std::shared_ptr<iop::Component> cmp;
 	rclcpp::Logger logger;
-	JausAddress p_remote_addr;
-	iop::Timer p_query_timer;
 	rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr p_sub_path;
 	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr p_sub_speed;
 	rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr p_pub_path;
@@ -90,14 +88,12 @@ protected:
 	QueryLocalWaypoint p_query_local_waypoint_msg;
 	std::unique_ptr<tf2_ros::Buffer> p_tf_buffer;
 	std::shared_ptr<tf2_ros::TransformListener> p_tf_listener;
-	bool p_has_access;
 	double p_hz;
 	bool p_new_rospath_received;
 
 	void pCmdPath(const nav_msgs::msg::Path::SharedPtr msg);
 	void pCmdPose(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
 	void pCmdSpeed(const std_msgs::msg::Float32::SharedPtr msg);
-	void pQueryCallback();
 	void pListState(bool success, unsigned int count);
 
 };

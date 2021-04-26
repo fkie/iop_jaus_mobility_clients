@@ -2,7 +2,6 @@
 
 #include "urn_jaus_jss_mobility_VelocityStateSensorClient/VelocityStateSensorClient_ReceiveFSM.h"
 #include <fkie_iop_component/iop_config.hpp>
-#include <fkie_iop_ocu_slavelib/Slave.h>
 
 
 using namespace JTS;
@@ -14,8 +13,8 @@ namespace urn_jaus_jss_mobility_VelocityStateSensorClient
 
 
 VelocityStateSensorClient_ReceiveFSM::VelocityStateSensorClient_ReceiveFSM(std::shared_ptr<iop::Component> cmp, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM)
-: logger(cmp->get_logger().get_child("VelocityStateSensorClient")),
-  p_query_timer(std::chrono::milliseconds(100), std::bind(&VelocityStateSensorClient_ReceiveFSM::pQueryCallback, this), false)
+: SlaveHandlerInterface(cmp, "VelocityStateSensorClient", 10.0),
+  logger(cmp->get_logger().get_child("VelocityStateSensorClient"))
 {
 
 	/*
@@ -31,7 +30,6 @@ VelocityStateSensorClient_ReceiveFSM::VelocityStateSensorClient_ReceiveFSM(std::
 	p_tf_frame_robot = "base_link";
 	p_use_odom = true;
 	p_query_velocity_state_msg.getBody()->getQueryVelocityStateRec()->setPresenceVector(65535);
-	p_has_access = false;
 	p_hz = 10.0;
 }
 
@@ -66,63 +64,30 @@ void VelocityStateSensorClient_ReceiveFSM::setupIopConfiguration()
 	cfg.param("hz", p_hz, p_hz, false);
 	p_pub_odom = cfg.create_publisher<nav_msgs::msg::Odometry>("velocity_state_odom", 5);
 	p_pub_twist = cfg.create_publisher<geometry_msgs::msg::TwistStamped>("velocity_state_twist", 5);
-	auto slave = Slave::get_instance(cmp);
-	slave->add_supported_service(*this, "urn:jaus:jss:mobility:VelocityStateSensor", 1, 0);
-
+	// initialize the control layer, which handles the access control staff
+	this->set_rate(p_hz);
+	this->set_supported_service(*this, "urn:jaus:jss:mobility:VelocityStateSensor", 1, 0);
+	this->set_event_name("velocity state");
 }
 
-void VelocityStateSensorClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)
+void VelocityStateSensorClient_ReceiveFSM::register_events(JausAddress remote_addr, double hz)
 {
-	if (service_uri.compare("urn:jaus:jss:mobility:VelocityStateSensor") == 0) {
-		p_remote_addr = component;
-		p_has_access = true;
-	} else {
-		RCLCPP_WARN(logger, "unexpected control allowed for %s received, ignored!", service_uri.c_str());
-	}
+	pEventsClient_ReceiveFSM->create_event(*this, remote_addr, p_query_velocity_state_msg, p_hz);
 }
 
-void VelocityStateSensorClient_ReceiveFSM::enable_monitoring_only(std::string service_uri, JausAddress component)
+void VelocityStateSensorClient_ReceiveFSM::unregister_events(JausAddress remote_addr)
 {
-	p_remote_addr = component;
+	pEventsClient_ReceiveFSM->cancel_event(*this, remote_addr, p_query_velocity_state_msg);
+	stop_query(remote_addr);
 }
 
-void VelocityStateSensorClient_ReceiveFSM::access_deactivated(std::string service_uri, JausAddress component)
+void VelocityStateSensorClient_ReceiveFSM::send_query(JausAddress remote_addr)
 {
-	p_has_access = false;
-	p_remote_addr = JausAddress(0);
+	sendJausMessage(p_query_velocity_state_msg, remote_addr);
 }
 
-void VelocityStateSensorClient_ReceiveFSM::create_events(std::string service_uri, JausAddress component, bool by_query)
+void VelocityStateSensorClient_ReceiveFSM::stop_query(JausAddress remote_addr)
 {
-	if (by_query) {
-		if (p_hz > 0) {
-			RCLCPP_INFO(logger, "create QUERY timer to get velocity state from %s", component.str().c_str());
-			p_query_timer.set_rate(p_hz);
-			p_query_timer.start();
-		} else {
-			RCLCPP_WARN(logger, "invalid hz %.2f for QUERY timer to get velocity state from %s", p_hz, component.str().c_str());
-		}
-	} else {
-		RCLCPP_INFO(logger, "create EVENT to get velocity state from %s", component.str().c_str());
-		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_velocity_state_msg, p_hz);
-	}
-}
-
-void VelocityStateSensorClient_ReceiveFSM::cancel_events(std::string service_uri, JausAddress component, bool by_query)
-{
-	if (by_query) {
-		p_query_timer.stop();
-	} else {
-		RCLCPP_INFO(logger, "cancel EVENT for velocity state by %s", component.str().c_str());
-		pEventsClient_ReceiveFSM->cancel_event(*this, component, p_query_velocity_state_msg);
-	}
-}
-
-void VelocityStateSensorClient_ReceiveFSM::pQueryCallback()
-{
-	if (p_remote_addr.get() != 0) {
-		sendJausMessage(p_query_velocity_state_msg, p_remote_addr);
-	}
 }
 
 void VelocityStateSensorClient_ReceiveFSM::event(JausAddress sender, unsigned short query_msg_id, unsigned int reportlen, const unsigned char* reportdata)

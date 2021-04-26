@@ -26,7 +26,6 @@ along with this program; or you can read the full license at
 #include <fkie_iop_component/iop_config.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
-#include <fkie_iop_ocu_slavelib/Slave.h>
 
 
 using namespace JTS;
@@ -38,9 +37,9 @@ namespace urn_jaus_jss_mobility_GlobalPoseSensorClient
 
 
 GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(std::shared_ptr<iop::Component> cmp, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM)
-: logger(cmp->get_logger().get_child("GlobalPoseSensorClient")),
-  p_tf_broadcaster(cmp),
-  p_query_timer(std::chrono::milliseconds(100), std::bind(&GlobalPoseSensorClient_ReceiveFSM::pQueryCallback, this), false)
+: SlaveHandlerInterface(cmp, "GlobalPoseSensorClient", 10.0),
+  logger(cmp->get_logger().get_child("GlobalPoseSensorClient")),
+  p_tf_broadcaster(cmp)
 {
 
 	/*
@@ -62,7 +61,6 @@ GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(std::shared
 	p_anchor_altitude = 0.0;
 	p_publish_world_anchor = true;
 	p_query_global_pose_msg.getBody()->getQueryGlobalPoseRec()->setPresenceVector(65535);
-	p_has_access = false;
 	p_hz = 10.0;
 }
 
@@ -71,7 +69,6 @@ GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(std::shared
 GlobalPoseSensorClient_ReceiveFSM::~GlobalPoseSensorClient_ReceiveFSM()
 {
 
-	p_query_timer.stop();
 	delete context;
 }
 
@@ -132,8 +129,11 @@ void GlobalPoseSensorClient_ReceiveFSM::setupIopConfiguration()
 	p_pub_imu = cfg.create_publisher<sensor_msgs::msg::Imu>("imu", 1);
 	p_pub_pose = cfg.create_publisher<geometry_msgs::msg::PoseStamped>("global_pose", 5);
 	p_sub_anchorfix = cfg.create_subscription<sensor_msgs::msg::NavSatFix>("fix_anchor", 1, std::bind(&GlobalPoseSensorClient_ReceiveFSM::anchorFixReceived, this, std::placeholders::_1));
-	auto slave = Slave::get_instance(cmp);
-	slave->add_supported_service(*this, "urn:jaus:jss:mobility:GlobalPoseSensor", 1, 0);
+	// initialize the control layer, which handles the access control staff
+	this->set_rate(p_hz);
+	this->set_supported_service(*this, "urn:jaus:jss:mobility:GlobalPoseSensor", 1, 0);
+	this->set_event_name("global pose");
+	this->set_query_before_event(true, 1.0);
 	p_tf_anchor.transform.translation.x = p_anchor_easting;
 	p_tf_anchor.transform.translation.y = p_anchor_northing;
 	p_tf_anchor.transform.translation.z = p_anchor_altitude;
@@ -148,58 +148,24 @@ void GlobalPoseSensorClient_ReceiveFSM::setupIopConfiguration()
 	RCLCPP_DEBUG(logger, "update anchor tf %s -> %s", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str());
 }
 
-void GlobalPoseSensorClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)
+void GlobalPoseSensorClient_ReceiveFSM::register_events(JausAddress remote_addr, double hz)
 {
-	if (service_uri.compare("urn:jaus:jss:mobility:GlobalPoseSensor") == 0) {
-		p_remote_addr = component;
-		p_has_access = true;
-	} else {
-		RCLCPP_WARN(logger, "unexpected control allowed for %s received, ignored!", service_uri.c_str());
-	}
+	pEventsClient_ReceiveFSM->create_event(*this, remote_addr, p_query_global_pose_msg, p_hz);
 }
 
-void GlobalPoseSensorClient_ReceiveFSM::enable_monitoring_only(std::string service_uri, JausAddress component)
+void GlobalPoseSensorClient_ReceiveFSM::unregister_events(JausAddress remote_addr)
 {
-	p_remote_addr = component;
+	pEventsClient_ReceiveFSM->cancel_event(*this, remote_addr, p_query_global_pose_msg);
+	stop_query(remote_addr);
 }
 
-void GlobalPoseSensorClient_ReceiveFSM::access_deactivated(std::string service_uri, JausAddress component)
+void GlobalPoseSensorClient_ReceiveFSM::send_query(JausAddress remote_addr)
 {
-	p_has_access = false;
-	p_remote_addr = JausAddress(0);
+	sendJausMessage(p_query_global_pose_msg, remote_addr);
 }
 
-void GlobalPoseSensorClient_ReceiveFSM::create_events(std::string service_uri, JausAddress component, bool by_query)
+void GlobalPoseSensorClient_ReceiveFSM::stop_query(JausAddress remote_addr)
 {
-	if (by_query) {
-		if (p_hz > 0) {
-			RCLCPP_INFO(logger, "create QUERY timer to get global pose from %s", component.str().c_str());
-			p_query_timer.set_rate(p_hz);
-			p_query_timer.start();
-		} else {
-			RCLCPP_WARN(logger, "invalid hz %.2f for QUERY timer to get global pose from %s", p_hz, component.str().c_str());
-		}
-	} else {
-		RCLCPP_INFO(logger, "create EVENT to get global pose from %s", component.str().c_str());
-		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_global_pose_msg, p_hz);
-	}
-}
-
-void GlobalPoseSensorClient_ReceiveFSM::cancel_events(std::string service_uri, JausAddress component, bool by_query)
-{
-	if (by_query) {
-		p_query_timer.stop();
-	} else {
-		RCLCPP_INFO(logger, "cancel EVENT for global pose by %s", component.str().c_str());
-		pEventsClient_ReceiveFSM->cancel_event(*this, component, p_query_global_pose_msg);
-	}
-}
-
-void GlobalPoseSensorClient_ReceiveFSM::pQueryCallback()
-{
-	if (p_remote_addr.get() != 0) {
-		sendJausMessage(p_query_global_pose_msg, p_remote_addr);
-	}
 }
 
 void GlobalPoseSensorClient_ReceiveFSM::event(JausAddress sender, unsigned short query_msg_id, unsigned int reportlen, const unsigned char* reportdata)

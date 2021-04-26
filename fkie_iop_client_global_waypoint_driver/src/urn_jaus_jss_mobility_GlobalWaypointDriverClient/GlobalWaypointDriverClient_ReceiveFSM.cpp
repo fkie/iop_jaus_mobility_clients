@@ -2,7 +2,6 @@
 #include "urn_jaus_jss_mobility_GlobalWaypointDriverClient/GlobalWaypointDriverClient_ReceiveFSM.h"
 #include <fkie_iop_component/gps_conversions.h>
 #include <fkie_iop_component/iop_config.hpp>
-#include <fkie_iop_ocu_slavelib/Slave.h>
 
 
 using namespace JTS;
@@ -14,8 +13,8 @@ namespace urn_jaus_jss_mobility_GlobalWaypointDriverClient
 
 
 GlobalWaypointDriverClient_ReceiveFSM::GlobalWaypointDriverClient_ReceiveFSM(std::shared_ptr<iop::Component> cmp, urn_jaus_jss_core_ManagementClient::ManagementClient_ReceiveFSM* pManagementClient_ReceiveFSM, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM)
-: logger(cmp->get_logger().get_child("GlobalWaypointDriverClient")),
-  p_query_timer(std::chrono::milliseconds(100), std::bind(&GlobalWaypointDriverClient_ReceiveFSM::pQueryCallback, this), false)
+: SlaveHandlerInterface(cmp, "GlobalWaypointDriverClient", 1.0),
+  logger(cmp->get_logger().get_child("GlobalWaypointDriverClient"))
 {
 	/*
 	 * If there are other variables, context must be constructed last so that all
@@ -33,7 +32,6 @@ GlobalWaypointDriverClient_ReceiveFSM::GlobalWaypointDriverClient_ReceiveFSM(std
 	p_tf_frame_world = "/world";
 	p_utm_zone = "32U";
 	p_wp_tolerance = 1.0;
-	p_has_access = false;
 	p_hz = 0.0;
 }
 
@@ -88,64 +86,32 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupIopConfiguration()
 	p_sub_fix = cfg.create_subscription<sensor_msgs::msg::NavSatFix>("cmd_fix", 1, std::bind(&GlobalWaypointDriverClient_ReceiveFSM::pCmdFix, this, std::placeholders::_1));
 	p_sub_speed = cfg.create_subscription<std_msgs::msg::Float32>("cmd_speed", 1, std::bind(&GlobalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this, std::placeholders::_1));
 	p_pub_path = cfg.create_publisher<nav_msgs::msg::Path>("global_waypoint", 5);
+	// force event for request sensor data
 	// initialize the control layer, which handles the access control staff
-	auto slave = Slave::get_instance(cmp);
-	slave->add_supported_service(*this, "urn:jaus:jss:mobility:GlobalWaypointDriver", 1, 0);
+	this->set_rate(p_hz);
+	this->set_supported_service(*this, "urn:jaus:jss:mobility:GlobalWaypointDriver", 1, 0);
+	this->set_event_name("global waypoint");
+	this->set_query_before_event(false);
 }
 
-void GlobalWaypointDriverClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)
+void GlobalWaypointDriverClient_ReceiveFSM::register_events(JausAddress remote_addr, double hz)
 {
-	if (service_uri.compare("urn:jaus:jss:mobility:GlobalWaypointDriver") == 0) {
-		p_remote_addr = component;
-		p_has_access = true;
-	} else {
-		RCLCPP_WARN(logger, "unexpected control allowed for %s received, ignored!", service_uri.c_str());
-	}
+	pEventsClient_ReceiveFSM->create_event(*this, remote_addr, p_query_global_waypoint_msg, p_hz);
 }
 
-void GlobalWaypointDriverClient_ReceiveFSM::enable_monitoring_only(std::string service_uri, JausAddress component)
+void GlobalWaypointDriverClient_ReceiveFSM::unregister_events(JausAddress remote_addr)
 {
-	p_remote_addr = component;
+	pEventsClient_ReceiveFSM->cancel_event(*this, remote_addr, p_query_global_waypoint_msg);
+	stop_query(remote_addr);
 }
 
-void GlobalWaypointDriverClient_ReceiveFSM::access_deactivated(std::string service_uri, JausAddress component)
+void GlobalWaypointDriverClient_ReceiveFSM::send_query(JausAddress remote_addr)
 {
-	p_has_access = false;
-	p_remote_addr = JausAddress(0);
+	sendJausMessage(p_query_global_waypoint_msg, remote_addr);
 }
 
-void GlobalWaypointDriverClient_ReceiveFSM::create_events(std::string service_uri, JausAddress component, bool by_query)
+void GlobalWaypointDriverClient_ReceiveFSM::stop_query(JausAddress remote_addr)
 {
-	if (by_query) {
-		if (p_hz > 0) {
-			RCLCPP_INFO(logger, "create QUERY timer to get global waypoint from %s with %.2fHz", component.str().c_str(), p_hz);
-			p_query_timer.set_rate(p_hz);
-			p_query_timer.start();
-		} else {
-			RCLCPP_WARN(logger, "invalid hz %.2f for QUERY timer to get global waypoint from %s", p_hz, component.str().c_str());
-		}
-	} else {
-		RCLCPP_INFO(logger, "create EVENT to get global waypoint from %s with %.2fHz", component.str().c_str(), p_hz);
-		pEventsClient_ReceiveFSM->create_event(*this, component, p_query_global_waypoint_msg, p_hz);
-		sendJausMessage(p_query_global_waypoint_msg, component);
-	}
-}
-
-void GlobalWaypointDriverClient_ReceiveFSM::cancel_events(std::string service_uri, JausAddress component, bool by_query)
-{
-	if (by_query) {
-		p_query_timer.stop();
-	} else {
-		RCLCPP_INFO(logger, "cancel EVENT for global waypoint by %s", component.str().c_str());
-		pEventsClient_ReceiveFSM->cancel_event(*this, component, p_query_global_waypoint_msg);
-	}
-}
-
-void GlobalWaypointDriverClient_ReceiveFSM::pQueryCallback()
-{
-	if (p_remote_addr.get() != 0) {
-		sendJausMessage(p_query_global_waypoint_msg, p_remote_addr);
-	}
 }
 
 void GlobalWaypointDriverClient_ReceiveFSM::event(JausAddress sender, unsigned short query_msg_id, unsigned int reportlen, const unsigned char* reportdata)
