@@ -22,6 +22,8 @@
 
 #include "GlobalWaypointListDriverClient_ReceiveFSM_sm.h"
 #include <rclcpp/rclcpp.hpp>
+#include <geographic_msgs/msg/geo_path.hpp>
+#include <geographic_msgs/msg/geo_pose_stamped.hpp>
 #include <fkie_iop_component/iop_component.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -79,6 +81,7 @@ protected:
 
 	std::shared_ptr<iop::Component> cmp;
 	rclcpp::Logger logger;
+	rclcpp::Subscription<geographic_msgs::msg::GeoPath>::SharedPtr p_sub_geopath;
 	rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr p_sub_path;
 	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr p_sub_speed;
 	rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr p_pub_path;
@@ -92,6 +95,7 @@ protected:
 	double p_hz;
 	bool p_new_rospath_received;
 
+	void pCmdGeoPath(const geographic_msgs::msg::GeoPath::SharedPtr msg);
 	void pCmdPath(const nav_msgs::msg::Path::SharedPtr msg);
 	void pCmdPose(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
 	void pCmdSpeed(const std_msgs::msg::Float32::SharedPtr msg);

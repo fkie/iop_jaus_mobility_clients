@@ -37,6 +37,10 @@ _global_waypoint (nav_msgs::msg::Path)_
 
 #### Subscriber:
 
+_cmd_geopose (geographic_msgs::GeoPoseStamped)_
+
+> Command for global waypoint.
+
 _cmd_pose (geometry_msgs::PoseStamped)_
 
 > Command for global waypoint. The coordinates are transformed to the global frame id and converted to Lat/Lon.

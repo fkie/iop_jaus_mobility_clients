@@ -13,6 +13,7 @@
 
   <depend>fkie_iop_list_manager</depend>
   <depend>fkie_iop_ocu_slavelib</depend>
+  <depend>geographic_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>

@@ -12,6 +12,7 @@
   <url type="website">https://github.com/fkie/iop_jaus_mobility_clients</url>
 
   <depend>fkie_iop_ocu_slavelib</depend>
+  <depend>geographic_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>sensor_msgs</depend>

@@ -4,6 +4,7 @@ iop_client_primitive_driver:
       - fkie_iop_discovery/DiscoveryClient
       - fkie_iop_platform_state/PlatformStateClient
       - fkie_iop_client_primitive_driver/PrimitiveDriverClient
+      - fkie_iop_client_global_pose_sensor/GlobalPoseSensorClient
     Events.timeout: 5
     DiscoveryClient:
       register_own_services: false

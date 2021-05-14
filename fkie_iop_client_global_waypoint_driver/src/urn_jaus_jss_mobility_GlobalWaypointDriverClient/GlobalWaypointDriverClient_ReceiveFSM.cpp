@@ -82,6 +82,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupIopConfiguration()
 	//RCLCPP_INFO(logger, "  waypoint_tolerance: %.2f", p_wp_tolerance);
 	//create ROS subscriber
 	// p_sub_path = cfg.create_subscription<nav_msgs::msg::Path>("cmd_path", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
+	p_sub_geopose = cfg.create_subscription<geographic_msgs::msg::GeoPoseStamped>("cmd_geopose", 1, std::bind(&GlobalWaypointDriverClient_ReceiveFSM::pCmdGeoPoseStamped, this, std::placeholders::_1));
 	p_sub_pose = cfg.create_subscription<geometry_msgs::msg::PoseStamped>("cmd_pose", 1, std::bind(&GlobalWaypointDriverClient_ReceiveFSM::pCmdPose, this, std::placeholders::_1));
 	p_sub_fix = cfg.create_subscription<sensor_msgs::msg::NavSatFix>("cmd_fix", 1, std::bind(&GlobalWaypointDriverClient_ReceiveFSM::pCmdFix, this, std::placeholders::_1));
 	p_sub_speed = cfg.create_subscription<std_msgs::msg::Float32>("cmd_speed", 1, std::bind(&GlobalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this, std::placeholders::_1));
@@ -230,6 +231,41 @@ void GlobalWaypointDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::msg::Path::
 					cmd.getBody()->getGlobalWaypointRec()->getLatitude(), cmd.getBody()->getGlobalWaypointRec()->getLongitude(),
 					p_remote_addr.str().c_str());
 			sendJausMessage(cmd, p_remote_addr);
+		}
+	}
+}
+
+void GlobalWaypointDriverClient_ReceiveFSM::pCmdGeoPoseStamped(const geographic_msgs::msg::GeoPoseStamped::SharedPtr msg)
+{
+	if (p_has_access) {
+		SetGlobalWaypoint cmd;
+		SetTravelSpeed cmd_speed;
+		float speed = p_travel_speed;
+		try {
+			cmd.getBody()->getGlobalWaypointRec()->setLatitude(msg->pose.position.latitude);
+			cmd.getBody()->getGlobalWaypointRec()->setLongitude(msg->pose.position.longitude);
+			cmd.getBody()->getGlobalWaypointRec()->setAltitude(msg->pose.position.altitude);
+			double roll, pitch, yaw;
+			tf2::Quaternion quat(msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w);
+			tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+			if (!isnan(yaw)) {
+				cmd.getBody()->getGlobalWaypointRec()->setRoll(roll);
+				cmd.getBody()->getGlobalWaypointRec()->setPitch(pitch);
+				cmd.getBody()->getGlobalWaypointRec()->setYaw(yaw);
+			}
+			RCLCPP_INFO(logger, "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
+			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
+			sendJausMessage(cmd_speed, p_remote_addr);
+			RCLCPP_INFO(logger, "send Waypoint from GeoPoseStamped [lat: %.2f, lon: %.2f] to %s",
+					cmd.getBody()->getGlobalWaypointRec()->getLatitude(), cmd.getBody()->getGlobalWaypointRec()->getLongitude(),
+					p_remote_addr.str().c_str());
+			sendJausMessage(cmd, p_remote_addr);
+		} catch (tf2::TransformException &ex) {
+			printf ("Failure %s\n", ex.what()); //Print exception which was caught
+			speed = 0.0;
+			RCLCPP_INFO(logger, "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
+			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
+			sendJausMessage(cmd_speed, p_remote_addr);
 		}
 	}
 }

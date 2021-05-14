@@ -91,6 +91,7 @@ void GlobalWaypointListDriverClient_ReceiveFSM::setupIopConfiguration()
 	cfg.param("hz", p_hz, p_hz, false);
 	//RCLCPP_INFO(logger, "  waypoint_tolerance: %.2f", p_wp_tolerance);
 	//create ROS subscriber
+	p_sub_geopath = cfg.create_subscription<geographic_msgs::msg::GeoPath>("cmd_geopath", 1, std::bind(&GlobalWaypointListDriverClient_ReceiveFSM::pCmdGeoPath, this, std::placeholders::_1));
 	p_sub_path = cfg.create_subscription<nav_msgs::msg::Path>("cmd_global_path", 1, std::bind(&GlobalWaypointListDriverClient_ReceiveFSM::pCmdPath, this, std::placeholders::_1));
 	p_sub_speed = cfg.create_subscription<std_msgs::msg::Float32>("cmd_speed", 1, std::bind(&GlobalWaypointListDriverClient_ReceiveFSM::pCmdSpeed, this, std::placeholders::_1));
 	p_pub_path = cfg.create_publisher<nav_msgs::msg::Path>("global_waypoint", 5);
@@ -234,6 +235,40 @@ void GlobalWaypointListDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::msg::Pa
 				cmd.getBody()->getGlobalWaypointRec()->setAltitude(pose_out.pose.position.z);
 				double roll, pitch, yaw;
 				tf2::Quaternion quat(pose_out.pose.orientation.x, pose_out.pose.orientation.y, pose_out.pose.orientation.z, pose_out.pose.orientation.w);
+				tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+				if (!isnan(yaw)) {
+					cmd.getBody()->getGlobalWaypointRec()->setRoll(roll);
+					cmd.getBody()->getGlobalWaypointRec()->setPitch(pitch);
+					cmd.getBody()->getGlobalWaypointRec()->setYaw(yaw);
+				}
+				urn_jaus_jss_core_ListManagerClient::SetElement::Body::SetElementSeq::ElementList::ElementRec rec;
+				unsigned char* buf = new unsigned char(cmd.getSize());
+				cmd.encode(buf);
+				rec.getElementData()->set(0, cmd.getSize(), buf);
+				pListManagerClient_ReceiveFSM->push_back(rec);
+				delete[] buf;
+			} catch (tf2::TransformException &ex) {
+				printf ("Failure %s\n", ex.what()); //Print exception which was caught
+			}
+		}
+		// after all points are transfered to the driver, we will be informed by list manager. After this we send the ExecuteList command.
+		p_new_rospath_received = true;
+	}
+}
+
+void GlobalWaypointListDriverClient_ReceiveFSM::pCmdGeoPath(const geographic_msgs::msg::GeoPath::SharedPtr msg)
+{
+	if (p_has_access) {
+		pListManagerClient_ReceiveFSM->clear();
+		for (unsigned int i = 0; i < msg->poses.size(); i++) {
+			try {
+				SetGlobalWaypoint cmd;
+				auto pose = msg->poses[i];
+				cmd.getBody()->getGlobalWaypointRec()->setLatitude(pose.pose.position.latitude);
+				cmd.getBody()->getGlobalWaypointRec()->setLongitude(pose.pose.position.longitude);
+				cmd.getBody()->getGlobalWaypointRec()->setAltitude(pose.pose.position.altitude);
+				double roll, pitch, yaw;
+				tf2::Quaternion quat(pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w);
 				tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 				if (!isnan(yaw)) {
 					cmd.getBody()->getGlobalWaypointRec()->setRoll(roll);

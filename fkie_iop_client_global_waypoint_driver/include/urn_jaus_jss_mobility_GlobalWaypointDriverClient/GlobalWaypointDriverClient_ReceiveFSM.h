@@ -24,6 +24,8 @@
 #include <fkie_iop_component/iop_component.hpp>
 
 #include <nav_msgs/msg/path.hpp>
+#include <geographic_msgs/msg/geo_path.hpp>
+#include <geographic_msgs/msg/geo_pose_stamped.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <std_msgs/msg/float32.hpp>
@@ -81,6 +83,7 @@ protected:
 	rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr p_sub_speed;
 	rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr p_sub_fix;
 	rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr p_pub_path;
+	rclcpp::Subscription<geographic_msgs::msg::GeoPoseStamped>::SharedPtr p_sub_geopose;
 	float p_travel_speed;
 	float p_wp_tolerance;
 	std::string p_tf_frame_world;
@@ -90,6 +93,7 @@ protected:
 	std::shared_ptr<tf2_ros::TransformListener> p_tf_listener;
 	double p_hz;
 
+	void pCmdGeoPoseStamped(const geographic_msgs::msg::GeoPoseStamped::SharedPtr msg);
 	void pCmdPath(const nav_msgs::msg::Path::SharedPtr msg);
 	void pCmdPose(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
 	void pCmdSpeed(const std_msgs::msg::Float32::SharedPtr msg);
