@@ -63,6 +63,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupNotifications()
 	p_sub_fix = cfg.subscribe<sensor_msgs::NavSatFix>("cmd_fix", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdFix, this);
 	p_sub_speed = cfg.subscribe<std_msgs::Float32>("cmd_speed", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdSpeed, this);
 	p_pub_path = cfg.advertise<nav_msgs::Path>("global_waypoint", 5, true);
+	p_sub_geopose = cfg.subscribe<geographic_msgs::GeoPoseStamped>("cmd_geopose", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdGeoPose, this);
 	// initialize the control layer, which handles the access control staff
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
 	slave.add_supported_service(*this, "urn:jaus:jss:mobility:GlobalWaypointDriver", 1, 0);
@@ -298,6 +299,41 @@ void GlobalWaypointDriverClient_ReceiveFSM::pCmdFix(const sensor_msgs::NavSatFix
 			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
 			sendJausMessage(cmd_speed, p_remote_addr);
 			ROS_INFO_NAMED("GlobalWaypointDriverClient", "send Waypoint from NavSatFix [lat: %.2f, lon: %.2f] to %s",
+					cmd.getBody()->getGlobalWaypointRec()->getLatitude(), cmd.getBody()->getGlobalWaypointRec()->getLongitude(),
+					p_remote_addr.str().c_str());
+			sendJausMessage(cmd, p_remote_addr);
+		} catch (tf::TransformException &ex) {
+			printf ("Failure %s\n", ex.what()); //Print exception which was caught
+			speed = 0.0;
+			ROS_INFO_NAMED("GlobalWaypointDriverClient", "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
+			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
+			sendJausMessage(cmd_speed, p_remote_addr);
+		}
+	}
+}
+
+void GlobalWaypointDriverClient_ReceiveFSM::pCmdGeoPose(const geographic_msgs::GeoPoseStamped::ConstPtr& msg)
+{
+	if (p_has_access) {
+		SetGlobalWaypoint cmd;
+		SetTravelSpeed cmd_speed;
+		float speed = p_travel_speed;
+		try {
+			cmd.getBody()->getGlobalWaypointRec()->setLatitude(msg->pose.position.latitude);
+			cmd.getBody()->getGlobalWaypointRec()->setLongitude(msg->pose.position.longitude);
+			cmd.getBody()->getGlobalWaypointRec()->setAltitude(msg->pose.position.altitude);
+			double roll, pitch, yaw;
+			tf::Quaternion quat(msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w);
+			tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+			if (!isnan(yaw)) {
+				cmd.getBody()->getGlobalWaypointRec()->setRoll(roll);
+				cmd.getBody()->getGlobalWaypointRec()->setPitch(pitch);
+				cmd.getBody()->getGlobalWaypointRec()->setYaw(yaw);
+			}
+			ROS_INFO_NAMED("GlobalWaypointDriverClient", "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
+			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
+			sendJausMessage(cmd_speed, p_remote_addr);
+			ROS_INFO_NAMED("GlobalWaypointDriverClient", "send Waypoint from Pose [lat: %.2f, lon: %.2f] to %s",
 					cmd.getBody()->getGlobalWaypointRec()->getLatitude(), cmd.getBody()->getGlobalWaypointRec()->getLongitude(),
 					p_remote_addr.str().c_str());
 			sendJausMessage(cmd, p_remote_addr);

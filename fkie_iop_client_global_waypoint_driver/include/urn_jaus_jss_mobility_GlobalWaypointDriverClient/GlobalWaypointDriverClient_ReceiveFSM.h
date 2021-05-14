@@ -20,6 +20,7 @@
 
 #include <ros/ros.h>
 #include <nav_msgs/Path.h>
+#include <geographic_msgs/GeoPoseStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <std_msgs/Float32.h>
@@ -80,6 +81,7 @@ protected:
 	ros::Subscriber p_sub_speed;
 	ros::Subscriber p_sub_fix;
 	ros::Publisher p_pub_path;
+	ros::Subscriber p_sub_geopose;
 	float p_travel_speed;
 	float p_wp_tolerance;
 	std::string p_tf_frame_world;
@@ -93,6 +95,7 @@ protected:
 	void pCmdPose(const geometry_msgs::PoseStamped::ConstPtr& msg);
 	void pCmdSpeed(const std_msgs::Float32::ConstPtr& msg);
 	void pCmdFix(const sensor_msgs::NavSatFix::ConstPtr& msg);
+	void pCmdGeoPose(const geographic_msgs::GeoPoseStamped::ConstPtr& msg);
 	void pQueryCallback(const ros::TimerEvent& event);
 };
 

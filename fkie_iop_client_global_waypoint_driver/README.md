@@ -48,3 +48,7 @@ _cmd_fix (sensor_msgs::NavSatFix)_
 _cmd_speed (std_msgs::Float32)_
 
 > Set the current travel speed.
+
+_cmd_geopose (geographic_msgs::GeoPoseStamped)_
+
+> Command for global waypoint.

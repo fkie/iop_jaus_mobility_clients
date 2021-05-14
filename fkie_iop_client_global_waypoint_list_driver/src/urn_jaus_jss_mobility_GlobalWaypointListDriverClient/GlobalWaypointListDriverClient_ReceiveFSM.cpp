@@ -66,6 +66,7 @@ void GlobalWaypointListDriverClient_ReceiveFSM::setupNotifications()
 	//create ROS subscriber
 	p_sub_path = cfg.subscribe<nav_msgs::Path>("cmd_global_path", 1, &GlobalWaypointListDriverClient_ReceiveFSM::pCmdPath, this);
 	p_sub_speed = cfg.subscribe<std_msgs::Float32>("cmd_speed", 1, &GlobalWaypointListDriverClient_ReceiveFSM::pCmdSpeed, this);
+	p_sub_geopath = cfg.subscribe<geographic_msgs::GeoPath>("cmd_global_geopath", 1, &GlobalWaypointListDriverClient_ReceiveFSM::pCmdGeoPath, this);
 	p_pub_path = cfg.advertise<nav_msgs::Path>("global_waypoint", 5, true);
 	// initialize the control layer, which handles the access control staff
 	Slave &slave = Slave::get_instance(*(jausRouter->getJausAddress()));
@@ -258,6 +259,39 @@ void GlobalWaypointListDriverClient_ReceiveFSM::pCmdSpeed(const std_msgs::Float3
 		cmd.getBody()->getExecuteListRec()->setElementUID(65535);
 		cmd.getBody()->getExecuteListRec()->setSpeed(p_travel_speed);
 		sendJausMessage(cmd, p_remote_addr);
+	}
+}
+
+void GlobalWaypointListDriverClient_ReceiveFSM::pCmdGeoPath(const geographic_msgs::GeoPath::ConstPtr& msg)
+{
+	if (p_has_access) {
+		pListManagerClient_ReceiveFSM->clear();
+		for (unsigned int i = 0; i < msg->poses.size(); i++) {
+			try {
+				SetGlobalWaypoint cmd;
+				geographic_msgs::GeoPoseStamped pose = msg->poses[i];
+				cmd.getBody()->getGlobalWaypointRec()->setLatitude(pose.pose.position.latitude);
+				cmd.getBody()->getGlobalWaypointRec()->setLongitude(pose.pose.position.longitude);
+				cmd.getBody()->getGlobalWaypointRec()->setAltitude(pose.pose.position.altitude);
+				double roll, pitch, yaw;
+				tf::Quaternion quat(pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w);
+				tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+				if (!isnan(yaw)) {
+					cmd.getBody()->getGlobalWaypointRec()->setRoll(roll);
+					cmd.getBody()->getGlobalWaypointRec()->setPitch(pitch);
+					cmd.getBody()->getGlobalWaypointRec()->setYaw(yaw);
+				}
+				urn_jaus_jss_core_ListManagerClient::SetElement::Body::SetElementSeq::ElementList::ElementRec rec;
+				unsigned char buf[cmd.getSize()];
+				cmd.encode(buf);
+				rec.getElementData()->set(0, cmd.getSize(), buf);
+				pListManagerClient_ReceiveFSM->push_back(rec);
+			} catch (tf::TransformException &ex) {
+				printf ("Failure %s\n", ex.what()); //Print exception which was caught
+			}
+		}
+		// after all points are transfered to the driver, we will be informed by list manager. After this we send the ExecuteList command.
+		p_new_rospath_received = true;
 	}
 }
 

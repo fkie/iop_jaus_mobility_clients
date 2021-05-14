@@ -21,6 +21,8 @@
 
 #include <ros/ros.h>
 #include <nav_msgs/Path.h>
+#include <geographic_msgs/GeoPath.h>
+#include <geographic_msgs/GeoPoseStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <std_msgs/Float32.h>
 #include <tf/transform_datatypes.h>
@@ -80,6 +82,7 @@ protected:
 	ros::Subscriber p_sub_path;
 	ros::Subscriber p_sub_speed;
 	ros::Publisher p_pub_path;
+	ros::Subscriber p_sub_geopath;
 	float p_travel_speed;
 	float p_wp_tolerance;
 	std::string p_tf_frame_world;
@@ -93,6 +96,7 @@ protected:
 	void pCmdPath(const nav_msgs::Path::ConstPtr& msg);
 	void pCmdPose(const geometry_msgs::PoseStamped::ConstPtr& msg);
 	void pCmdSpeed(const std_msgs::Float32::ConstPtr& msg);
+	void pCmdGeoPath(const geographic_msgs::GeoPath::ConstPtr& msg);
 	void pQueryCallback(const ros::TimerEvent& event);
 	void pListState(bool success, unsigned int count);
 

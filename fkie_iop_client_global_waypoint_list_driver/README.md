@@ -43,3 +43,7 @@ _cmd_global_path (nav_msgs::Path)_
 _cmd_speed (std_msgs::Float32)_
 
 > Set the current travel speed.
+
+_cmd_global_geopath (geographic_msgs::GeoPath)_
+
+> Command with list of global waypoints. 
