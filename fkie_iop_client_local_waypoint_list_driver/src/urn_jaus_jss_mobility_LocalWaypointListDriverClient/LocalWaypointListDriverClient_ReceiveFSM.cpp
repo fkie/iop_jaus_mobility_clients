@@ -243,6 +243,7 @@ void LocalWaypointListDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::msg::Pat
 				printf ("Failure %s\n", ex.what()); //Print exception which was caught
 			}
 		}
+		pListManagerClient_ReceiveFSM->send_list();
 		p_new_rospath_received = true;
 		// after all points are transfered to the driver, we will be informed by list manager. After this we send the ExecuteList command.
 	}

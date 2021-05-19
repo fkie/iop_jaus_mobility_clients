@@ -208,7 +208,7 @@ void LocalPoseSensorClient_ReceiveFSM::handleReportLocalPoseAction(ReportLocalPo
 		ros_odom.header.frame_id = this->p_tf_frame_odom;
 		p_pub_odom->publish(ros_odom);
 	} catch (std::exception &e) {
-		RCLCPP_WARN(logger, "LocalPoseSensorClient: can not publish tf, pose or odometry: %s", e.what());
+		RCLCPP_WARN(logger, "can not publish tf, pose or odometry: %s", e.what());
 	}
 }
 

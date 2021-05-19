@@ -251,6 +251,7 @@ void GlobalWaypointListDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::msg::Pa
 				printf ("Failure %s\n", ex.what()); //Print exception which was caught
 			}
 		}
+		pListManagerClient_ReceiveFSM->send_list();
 		// after all points are transfered to the driver, we will be informed by list manager. After this we send the ExecuteList command.
 		p_new_rospath_received = true;
 	}
@@ -285,6 +286,7 @@ void GlobalWaypointListDriverClient_ReceiveFSM::pCmdGeoPath(const geographic_msg
 				printf ("Failure %s\n", ex.what()); //Print exception which was caught
 			}
 		}
+		pListManagerClient_ReceiveFSM->send_list();
 		// after all points are transfered to the driver, we will be informed by list manager. After this we send the ExecuteList command.
 		p_new_rospath_received = true;
 	}
