@@ -240,11 +240,12 @@ void LocalWaypointListDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::Path::Co
 				unsigned char buf[cmd.getSize()];
 				cmd.encode(buf);
 				rec.getElementData()->set(0, cmd.getSize(), buf);
-				pListManagerClient_ReceiveFSM->push_back(rec);
+				pListManagerClient_ReceiveFSM->push_back(rec, false);
 			} catch (tf::TransformException &ex) {
 				printf ("Failure %s\n", ex.what()); //Print exception which was caught
 			}
 		}
+		pListManagerClient_ReceiveFSM->send_list();
 		p_new_rospath_received = true;
 		// after all points are transfered to the driver, we will be informed by list manager. After this we send the ExecuteList command.
 	}
