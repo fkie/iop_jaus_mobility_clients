@@ -86,6 +86,8 @@ void LocalWaypointDriverClient_ReceiveFSM::setupIopConfiguration()
 	this->set_rate(p_hz);
 	this->set_supported_service(*this, "urn:jaus:jss:mobility:LocalWaypointDriver", 1, 0);
 	this->set_event_name("local waypoint");
+	p_tf_buffer = std::make_unique<tf2_ros::Buffer>(cmp->get_clock());
+	p_tf_listener = std::make_shared<tf2_ros::TransformListener>(*p_tf_buffer);
 }
 
 void LocalWaypointDriverClient_ReceiveFSM::register_events(JausAddress remote_addr, double hz)

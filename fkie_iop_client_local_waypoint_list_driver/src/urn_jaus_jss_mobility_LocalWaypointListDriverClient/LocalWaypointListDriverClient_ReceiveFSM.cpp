@@ -91,6 +91,8 @@ void LocalWaypointListDriverClient_ReceiveFSM::setupIopConfiguration()
 	this->set_rate(p_hz);
 	this->set_supported_service(*this, "urn:jaus:jss:mobility:LocalWaypointListDriver", 1, 0);
 	this->set_event_name("local waypoints");
+	p_tf_buffer = std::make_unique<tf2_ros::Buffer>(cmp->get_clock());
+	p_tf_listener = std::make_shared<tf2_ros::TransformListener>(*p_tf_buffer);
 }
 
 void LocalWaypointListDriverClient_ReceiveFSM::control_allowed(std::string service_uri, JausAddress component, unsigned char authority)

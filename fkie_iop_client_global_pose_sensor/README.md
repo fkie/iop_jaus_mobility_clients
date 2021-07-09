@@ -37,7 +37,7 @@ _anchor_altitude (double_, Default: 0.0)
 
 _publish_world_anchor (bool_ Default: true)
 
-> Enables the publishing of /world to anchor tf. You can disable the publishing of this tf by this service and publish tf itself.
+> Enables the publishing of world to anchor tf. You can disable the publishing of this tf by this service and publish tf itself.
 
 #### Publisher:
 

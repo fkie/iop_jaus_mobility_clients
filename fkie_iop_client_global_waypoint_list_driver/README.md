@@ -7,7 +7,7 @@ Forwards a list of global waypoints to IOP compliant robot.
 
 #### Parameter:
 
-_tf_frame_world (str_, Default: "/world")
+_tf_frame_world (str_, Default: "world")
 
 > TF frame id used in ROS for global coordinates.
 

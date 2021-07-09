@@ -53,7 +53,7 @@ GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(std::shared
 	this->pEventsClient_ReceiveFSM = pEventsClient_ReceiveFSM;
 	this->pTransport_ReceiveFSM = pTransport_ReceiveFSM;
 	this->cmp = cmp;
-	p_tf_frame_world = "/world";
+	p_tf_frame_world = "world";
 	p_tf_frame_anchor = "anchor";
 	p_tf_frame_robot = "base_link";
 	p_anchor_northing = 0.0;
@@ -88,7 +88,7 @@ void GlobalPoseSensorClient_ReceiveFSM::setupIopConfiguration()
 	cfg.declare_param<std::string>("tf_frame_world", p_tf_frame_world, true,
 		rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
 		"TF frame id used in ROS for global coordinates.",
-		"Default: '/world'");
+		"Default: 'world'");
 	cfg.declare_param<std::string>("tf_frame_anchor", p_tf_frame_anchor, true,
 		rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
 		"TF frame id for achor between world and robot frame. It is usefull for visualization in RViz.",

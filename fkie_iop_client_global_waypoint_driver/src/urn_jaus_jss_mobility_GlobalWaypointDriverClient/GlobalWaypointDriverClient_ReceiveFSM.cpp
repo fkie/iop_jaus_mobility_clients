@@ -29,7 +29,7 @@ GlobalWaypointDriverClient_ReceiveFSM::GlobalWaypointDriverClient_ReceiveFSM(std
 	this->pTransport_ReceiveFSM = pTransport_ReceiveFSM;
 	this->cmp = cmp;
 	p_travel_speed = 1.0;
-	p_tf_frame_world = "/world";
+	p_tf_frame_world = "world";
 	p_utm_zone = "32U";
 	p_wp_tolerance = 1.0;
 	p_hz = 0.0;
@@ -57,7 +57,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupIopConfiguration()
 	cfg.declare_param<std::string>("tf_frame_world", p_tf_frame_world, true,
 		rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
 		"TF frame id used in ROS for global coordinates.",
-		"Default: '/world'");
+		"Default: 'world'");
 	cfg.declare_param<std::string>("utm_zone", p_utm_zone, true,
 		rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
 		"The UTM zone is used for translation of ROS global position coordinates into Lat/Lon coordinates.",
@@ -93,6 +93,8 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupIopConfiguration()
 	this->set_supported_service(*this, "urn:jaus:jss:mobility:GlobalWaypointDriver", 1, 0);
 	this->set_event_name("global waypoint");
 	this->set_query_before_event(false);
+	p_tf_buffer = std::make_unique<tf2_ros::Buffer>(cmp->get_clock());
+	p_tf_listener = std::make_shared<tf2_ros::TransformListener>(*p_tf_buffer);
 }
 
 void GlobalWaypointDriverClient_ReceiveFSM::register_events(JausAddress remote_addr, double hz)
