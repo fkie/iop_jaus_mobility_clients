@@ -171,7 +171,7 @@ void GlobalWaypointListDriverClient_ReceiveFSM::handleReportGlobalWaypointAction
 	if (wprec->isWaypointToleranceValid()) {
 	}
 
-	ROS_DEBUG_NAMED("GlobalWaypointListDriverClient", "currentWaypointAction from %s - lat: %.2f, lon: %.2f", sender.str().c_str(), lat, lon);
+	ROS_DEBUG_NAMED("GlobalWaypointListDriverClient", "globalWaypointListAction from %s - lat: %.2f, lon: %.2f", sender.str().c_str(), lat, lon);
 	ROS_DEBUG_NAMED("GlobalWaypointListDriverClient", "    alt: %.2f, roll: %.2f, pitch: %.2f, yaw: %.2f", alt, roll, pitch, yaw);
 
 	nav_msgs::Path path;
@@ -212,7 +212,8 @@ void GlobalWaypointListDriverClient_ReceiveFSM::handleReportTravelSpeedAction(Re
 void GlobalWaypointListDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::Path::ConstPtr& msg)
 {
 	if (p_has_access) {
-		pListManagerClient_ReceiveFSM->clear();
+		pListManagerClient_ReceiveFSM->clear_list();
+		pListManagerClient_ReceiveFSM->delete_remote();
 		for (unsigned int i = 0; i < msg->poses.size(); i++) {
 			try {
 				SetGlobalWaypoint cmd;
@@ -266,7 +267,8 @@ void GlobalWaypointListDriverClient_ReceiveFSM::pCmdSpeed(const std_msgs::Float3
 void GlobalWaypointListDriverClient_ReceiveFSM::pCmdGeoPath(const geographic_msgs::GeoPath::ConstPtr& msg)
 {
 	if (p_has_access) {
-		pListManagerClient_ReceiveFSM->clear();
+		pListManagerClient_ReceiveFSM->clear_list();
+		pListManagerClient_ReceiveFSM->delete_remote();
 		for (unsigned int i = 0; i < msg->poses.size(); i++) {
 			try {
 				SetGlobalWaypoint cmd;
@@ -291,9 +293,9 @@ void GlobalWaypointListDriverClient_ReceiveFSM::pCmdGeoPath(const geographic_msg
 				printf ("Failure %s\n", ex.what()); //Print exception which was caught
 			}
 		}
-		pListManagerClient_ReceiveFSM->send_list();
 		// after all points are transfered to the driver, we will be informed by list manager. After this we send the ExecuteList command.
 		p_new_rospath_received = true;
+		pListManagerClient_ReceiveFSM->send_list();
 	}
 }
 
@@ -306,16 +308,21 @@ void GlobalWaypointListDriverClient_ReceiveFSM::pListState(bool success, unsigne
 			cmd.getBody()->getExecuteListRec()->setElementUID(0);
 			cmd.getBody()->getExecuteListRec()->setSpeed(p_travel_speed);
 			sendJausMessage(cmd, p_remote_addr);
+			pListManagerClient_ReceiveFSM->clear_list();
+			p_new_rospath_received = false;
+		} else {
+			ROS_INFO_NAMED("GlobalWaypointListDriverClient", "no new path to execute list with %d points with speed %.2f on %s", count, p_travel_speed, p_remote_addr.str().c_str());
 		}
 	} else if (!success) {
 		ROS_INFO_NAMED("GlobalWaypointListDriverClient", "errors while  transfer points occurred, stop and clear all points");
-		pListManagerClient_ReceiveFSM->clear();
-		ExecuteList cmd;
-		cmd.getBody()->getExecuteListRec()->setElementUID(65535);
-		cmd.getBody()->getExecuteListRec()->setSpeed(0);
-		sendJausMessage(cmd, p_remote_addr);
+		pListManagerClient_ReceiveFSM->delete_remote();
+		pListManagerClient_ReceiveFSM->send_list();
+		// ExecuteList cmd;
+		// cmd.getBody()->getExecuteListRec()->setElementUID(65535);
+		// cmd.getBody()->getExecuteListRec()->setSpeed(0);
+		// sendJausMessage(cmd, p_remote_addr);
+		// p_new_rospath_received = false;
 	}
-	p_new_rospath_received = false;
 }
 
 };

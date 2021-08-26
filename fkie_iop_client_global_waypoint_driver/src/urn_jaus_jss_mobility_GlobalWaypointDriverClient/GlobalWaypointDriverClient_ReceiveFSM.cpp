@@ -158,7 +158,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::handleReportGlobalWaypointAction(Rep
 	if (wprec->isWaypointToleranceValid()) {
 	}
 
-	ROS_DEBUG_NAMED("GlobalWaypointDriverClient", "currentWaypointAction from %s - lat: %.2f, lon: %.2f", sender.str().c_str(), lat, lon);
+	ROS_DEBUG_NAMED("GlobalWaypointDriverClient", "globalWaypointAction from %s - lat: %.2f, lon: %.2f", sender.str().c_str(), lat, lon);
 	ROS_DEBUG_NAMED("GlobalWaypointDriverClient", "    alt: %.2f, roll: %.2f, pitch: %.2f, yaw: %.2f", alt, roll, pitch, yaw);
 
 	nav_msgs::Path path;

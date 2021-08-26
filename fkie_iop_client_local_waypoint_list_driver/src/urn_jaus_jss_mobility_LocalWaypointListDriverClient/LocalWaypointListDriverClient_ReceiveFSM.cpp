@@ -168,7 +168,7 @@ void LocalWaypointListDriverClient_ReceiveFSM::handleReportLocalWaypointAction(R
 	if (wprec->isWaypointToleranceValid()) {
 	}
 
-	ROS_DEBUG_NAMED("LocalWaypointListDriverClient", "currentWaypointAction from %s - x: %.2f, y: %.2f, z: %.2f", sender.str().c_str(), x, y, z);
+	ROS_DEBUG_NAMED("LocalWaypointListDriverClient", "localWaypointListAction from %s - x: %.2f, y: %.2f, z: %.2f", sender.str().c_str(), x, y, z);
 	ROS_DEBUG_NAMED("LocalWaypointListDriverClient", "    roll: %.2f, pitch: %.2f, yaw: %.2f", roll, pitch, yaw);
 
 	nav_msgs::Path path;
@@ -205,7 +205,8 @@ void LocalWaypointListDriverClient_ReceiveFSM::handleReportTravelSpeedAction(Rep
 void LocalWaypointListDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::Path::ConstPtr& msg)
 {
 	if (p_has_access) {
-		pListManagerClient_ReceiveFSM->clear();
+		pListManagerClient_ReceiveFSM->clear_list();
+		pListManagerClient_ReceiveFSM->delete_remote();
 		for (unsigned int i = 0; i < msg->poses.size(); i++) {
 			try {
 				SetLocalWaypoint cmd;
@@ -272,16 +273,18 @@ void LocalWaypointListDriverClient_ReceiveFSM::pListState(bool success, unsigned
 			cmd.getBody()->getExecuteListRec()->setElementUID(0);
 			cmd.getBody()->getExecuteListRec()->setSpeed(p_travel_speed);
 			sendJausMessage(cmd, p_remote_addr);
+			pListManagerClient_ReceiveFSM->clear_list();
+			p_new_rospath_received = false;
 		}
 	} else if (!success) {
 		ROS_INFO_NAMED("LocalWaypointListDriverClient", "errors while  transfer points occurred, stop and clear all points");
-		pListManagerClient_ReceiveFSM->clear();
-		ExecuteList cmd;
-		cmd.getBody()->getExecuteListRec()->setElementUID(65535);
-		cmd.getBody()->getExecuteListRec()->setSpeed(0);
-		sendJausMessage(cmd, p_remote_addr);
+		pListManagerClient_ReceiveFSM->delete_remote();
+		pListManagerClient_ReceiveFSM->send_list();
+		// ExecuteList cmd;
+		// cmd.getBody()->getExecuteListRec()->setElementUID(65535);
+		// cmd.getBody()->getExecuteListRec()->setSpeed(0);
+		// sendJausMessage(cmd, p_remote_addr);
 	}
-	p_new_rospath_received = false;
 }
 
 };

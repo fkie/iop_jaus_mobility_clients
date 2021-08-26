@@ -155,7 +155,7 @@ void LocalWaypointDriverClient_ReceiveFSM::handleReportLocalWaypointAction(Repor
 	if (wprec->isWaypointToleranceValid()) {
 	}
 
-	ROS_DEBUG_NAMED("LocalWaypointDriverClient", "currentWaypointAction from %s - x: %.2f, y: %.2f, z: %.2f", sender.str().c_str(), x, y, z);
+	ROS_DEBUG_NAMED("LocalWaypointDriverClient", "localWaypointAction from %s - x: %.2f, y: %.2f, z: %.2f", sender.str().c_str(), x, y, z);
 	ROS_DEBUG_NAMED("LocalWaypointDriverClient", "    roll: %.2f, pitch: %.2f, yaw: %.2f", roll, pitch, yaw);
 
 	nav_msgs::Path path;
