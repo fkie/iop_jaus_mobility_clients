@@ -232,8 +232,8 @@ void LocalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::msg::Po
 			auto pose_in = *msg;
 			auto pose_out = geometry_msgs::msg::PoseStamped();
 			if (!pose_in.header.frame_id.empty() && !p_tf_frame_robot.empty()) {
-				p_tf_buffer->lookupTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration(0.3));
-				p_tf_buffer->transform(pose_in, pose_out, p_tf_frame_robot);
+				//p_tf_buffer->lookupTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration(0.3));
+				p_tf_buffer->transform(pose_in, pose_out, p_tf_frame_robot, tf2::durationFromSec(0.3));
 			} else {
 				pose_out = pose_in;
 				if (p_tf_frame_robot.empty()) {
@@ -261,9 +261,8 @@ void LocalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::msg::Po
 					p_remote_addr.str().c_str());
 			sendJausMessage(cmd, p_remote_addr);
 		} catch (tf2::TransformException &ex) {
-			printf ("Failure %s\n", ex.what()); //Print exception which was caught
 			speed = 0.0;
-			RCLCPP_INFO(logger, "set speed to %.2f on %s", speed, p_remote_addr.str().c_str());
+			RCLCPP_INFO(logger, "set speed to %.2f on %s, because of error: %s", speed, p_remote_addr.str().c_str(), ex.what());
 			cmd_speed.getBody()->getTravelSpeedRec()->setSpeed(speed);
 			sendJausMessage(cmd_speed, p_remote_addr);
 		}

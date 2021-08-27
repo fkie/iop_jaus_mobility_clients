@@ -175,7 +175,7 @@ void GlobalWaypointListDriverClient_ReceiveFSM::handleReportGlobalWaypointAction
 	if (wprec->isWaypointToleranceValid()) {
 	}
 
-	RCLCPP_DEBUG(logger, "currentWaypointAction from %s - lat: %.2f, lon: %.2f", sender.str().c_str(), lat, lon);
+	RCLCPP_DEBUG(logger, "globalWaypointAction from %s - lat: %.2f, lon: %.2f", sender.str().c_str(), lat, lon);
 	RCLCPP_DEBUG(logger, "    alt: %.2f, roll: %.2f, pitch: %.2f, yaw: %.2f", alt, roll, pitch, yaw);
 
 	auto path = nav_msgs::msg::Path();
@@ -217,7 +217,8 @@ void GlobalWaypointListDriverClient_ReceiveFSM::handleReportTravelSpeedAction(Re
 void GlobalWaypointListDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::msg::Path::SharedPtr msg)
 {
 	if (p_has_access) {
-		pListManagerClient_ReceiveFSM->clear();
+		pListManagerClient_ReceiveFSM->clear_list();
+		pListManagerClient_ReceiveFSM->delete_remote();
 		for (unsigned int i = 0; i < msg->poses.size(); i++) {
 			try {
 				SetGlobalWaypoint cmd;
@@ -260,7 +261,8 @@ void GlobalWaypointListDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::msg::Pa
 void GlobalWaypointListDriverClient_ReceiveFSM::pCmdGeoPath(const geographic_msgs::msg::GeoPath::SharedPtr msg)
 {
 	if (p_has_access) {
-		pListManagerClient_ReceiveFSM->clear();
+		pListManagerClient_ReceiveFSM->clear_list();
+		pListManagerClient_ReceiveFSM->delete_remote();
 		for (unsigned int i = 0; i < msg->poses.size(); i++) {
 			try {
 				SetGlobalWaypoint cmd;
@@ -313,16 +315,14 @@ void GlobalWaypointListDriverClient_ReceiveFSM::pListState(bool success, unsigne
 			cmd.getBody()->getExecuteListRec()->setElementUID(0);
 			cmd.getBody()->getExecuteListRec()->setSpeed(p_travel_speed);
 			sendJausMessage(cmd, p_remote_addr);
+			pListManagerClient_ReceiveFSM->clear_list();
+			p_new_rospath_received = false;
 		}
 	} else if (!success) {
 		RCLCPP_INFO(logger, "errors while  transfer points occurred, stop and clear all points");
-		pListManagerClient_ReceiveFSM->clear();
-		ExecuteList cmd;
-		cmd.getBody()->getExecuteListRec()->setElementUID(65535);
-		cmd.getBody()->getExecuteListRec()->setSpeed(0);
-		sendJausMessage(cmd, p_remote_addr);
+		pListManagerClient_ReceiveFSM->delete_remote();
+		pListManagerClient_ReceiveFSM->send_list();
 	}
-	p_new_rospath_received = false;
 }
 
 }
