@@ -31,6 +31,7 @@
 #include <std_msgs/msg/float32.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include "message_filters/subscriber.h"
 #include <fkie_iop_ocu_slavelib/SlaveHandlerInterface.h>

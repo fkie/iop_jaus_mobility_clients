@@ -215,7 +215,7 @@ void LocalWaypointListDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::msg::Pat
 				}
 				auto pose_out = geometry_msgs::msg::PoseStamped();
 				if (!pose_in.header.frame_id.empty() && !p_tf_frame_robot.empty()) {
-					p_tf_buffer->lookupTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration(0.3));
+					p_tf_buffer->lookupTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration::from_seconds(0.3));
 					p_tf_buffer->transform(pose_in, pose_out, p_tf_frame_robot);
 				} else {
 					pose_out = pose_in;

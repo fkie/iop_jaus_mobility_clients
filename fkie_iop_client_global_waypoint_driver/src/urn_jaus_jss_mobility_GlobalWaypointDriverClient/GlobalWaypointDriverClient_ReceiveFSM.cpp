@@ -200,7 +200,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::msg::Path::
 				if (pose_in.header.frame_id.empty()) {
 					pose_in.header = msg->header;
 				}
-				p_tf_buffer->lookupTransform(p_tf_frame_world, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration(0.3));
+				p_tf_buffer->lookupTransform(p_tf_frame_world, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration::from_seconds(0.3));
 				auto pose_out = geometry_msgs::msg::PoseStamped();
 				p_tf_buffer->transform(pose_in, pose_out, p_tf_frame_world);
 				double lat, lon = 0;
@@ -280,7 +280,7 @@ void GlobalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::msg::P
 		float speed = p_travel_speed;
 		try {
 			auto pose_in = *msg;
-			p_tf_buffer->lookupTransform(p_tf_frame_world, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration(0.3));
+			p_tf_buffer->lookupTransform(p_tf_frame_world, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration::from_seconds(0.3));
 			auto pose_out = geometry_msgs::msg::PoseStamped();
 			p_tf_buffer->transform(pose_in, pose_out, p_tf_frame_world);
 			double lat, lon = 0;

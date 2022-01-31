@@ -187,7 +187,7 @@ void LocalWaypointDriverClient_ReceiveFSM::pCmdPath(const nav_msgs::msg::Path::S
 				if (pose_in.header.frame_id.empty()) {
 					pose_in.header = msg->header;
 				}
-				p_tf_buffer->lookupTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration(0.3));
+				p_tf_buffer->lookupTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration::from_seconds(0.3));
 				auto pose_out = geometry_msgs::msg::PoseStamped();
 				p_tf_buffer->transform(pose_in, pose_out, p_tf_frame_robot);
 				cmd.getBody()->getLocalWaypointRec()->setX(pose_out.pose.position.x);
@@ -232,7 +232,7 @@ void LocalWaypointDriverClient_ReceiveFSM::pCmdPose(const geometry_msgs::msg::Po
 			auto pose_in = *msg;
 			auto pose_out = geometry_msgs::msg::PoseStamped();
 			if (!pose_in.header.frame_id.empty() && !p_tf_frame_robot.empty()) {
-				//p_tf_buffer->lookupTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration(0.3));
+				//p_tf_buffer->lookupTransform(p_tf_frame_robot, pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration::from_seconds(0.3));
 				p_tf_buffer->transform(pose_in, pose_out, p_tf_frame_robot, tf2::durationFromSec(0.3));
 			} else {
 				pose_out = pose_in;

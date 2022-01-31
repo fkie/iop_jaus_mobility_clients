@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>fkie_iop_client_local_pose_sensor</name>
-  <version>1.1.0</version>
+  <version>2.1.0</version>
   <description>The client service for LocalPoseSensor service </description>
 
   <author>Alexander Tiderko</author>
