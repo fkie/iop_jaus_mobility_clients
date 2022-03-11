@@ -15,6 +15,7 @@
   <depend>fkie_iop_component</depend>
   <depend>fkie_iop_list_manager</depend>
   <depend>fkie_iop_ocu_slavelib</depend>
+  <depend>gps_common</depend>
   <depend>nav_msgs</depend>
   <depend>roscpp</depend>
   <depend>std_msgs</depend>

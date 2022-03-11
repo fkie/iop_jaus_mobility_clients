@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
              fkie_iop_component
              fkie_iop_ocu_slavelib
              geometry_msgs
+             gps_common
              nav_msgs
              roscpp
              std_msgs
@@ -25,6 +26,7 @@ catkin_package(
         fkie_iop_component
         fkie_iop_ocu_slavelib
         geometry_msgs
+        gps_common
         nav_msgs
         roscpp
         std_msgs
