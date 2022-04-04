@@ -53,7 +53,7 @@ GlobalPoseSensorClient_ReceiveFSM::GlobalPoseSensorClient_ReceiveFSM(urn_jaus_js
 	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
 	p_tf_frame_world = "world";
 	p_tf_frame_anchor = "anchor";
-	p_tf_frame_robot = "base_link";
+	p_tf_frame_robot = "base_link_ground";
 	p_anchor_northing = 0.0;
 	p_anchor_easting = 0.0;
 	p_anchor_altitude = 0.0;
@@ -200,6 +200,7 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 	p_pub_navsatfix.publish(fix);
 	sensor_msgs::Imu imu;
 	tf::Quaternion quat;
+	tf::Quaternion quat_yaw;
 	if (msg.getBody()->getGlobalPoseRec()->isYawValid()) {
 		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "quat from: %.2f, %.2f, %.2f", msg.getBody()->getGlobalPoseRec()->getRoll(), msg.getBody()->getGlobalPoseRec()->getPitch(), msg.getBody()->getGlobalPoseRec()->getYaw());
 		quat = tf::createQuaternionFromRPY(msg.getBody()->getGlobalPoseRec()->getRoll(), msg.getBody()->getGlobalPoseRec()->getPitch(), msg.getBody()->getGlobalPoseRec()->getYaw());
@@ -208,8 +209,10 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 		imu.orientation.z = quat.z();
 		imu.orientation.w = quat.w();
 		p_pub_imu.publish(imu);
+		quat_yaw = tf::createQuaternionFromRPY(0, 0, msg.getBody()->getGlobalPoseRec()->getYaw());
 	} else {
 		quat = tf::createQuaternionFromRPY(0, 0, 0);
+		quat_yaw = tf::createQuaternionFromRPY(0, 0, 0);
 	}
 
 	geometry_msgs::TransformStamped transform;
@@ -247,8 +250,17 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 		if (p_publish_world_anchor) {
 			ROS_DEBUG_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s, stamp: %d.%d", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str(), p_tf_anchor.header.stamp.sec, p_tf_anchor.header.stamp.nsec);
 			p_tf_broadcaster.sendTransform(p_tf_anchor);
+		} else {
+			transform.header.frame_id = this->p_tf_frame_world;
 		}
 		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s, stamp: %d.%d", this->p_tf_frame_anchor.c_str(), this->p_tf_frame_robot.c_str(), transform.header.stamp.sec, transform.header.stamp.nsec);
+		p_tf_broadcaster.sendTransform(transform);
+		transform.transform.rotation.x = quat_yaw.x();
+		transform.transform.rotation.y = quat_yaw.y();
+		transform.transform.rotation.z = quat_yaw.z();
+		transform.transform.rotation.w = quat_yaw.w();
+		transform.child_frame_id = this->p_tf_frame_robot + "_ground";
+		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s, stamp: %d.%d", this->p_tf_frame_anchor.c_str(), transform.child_frame_id.c_str(), transform.header.stamp.sec, transform.header.stamp.nsec);
 		p_tf_broadcaster.sendTransform(transform);
 	}
 	// publish global pose

@@ -189,6 +189,17 @@ void LocalPoseSensorClient_ReceiveFSM::handleReportLocalPoseAction(ReportLocalPo
 		}
 		if (! tf_msg.child_frame_id.empty()) {
 			p_tf_broadcaster.sendTransform(tf_msg);
+			if (!p_send_inverse_trafo) {
+				tf2::Quaternion qground;
+				qground.setRPY(0, 0, pround(pose->getYaw()));
+				tf2::Transform transform_ground(qground, r);
+				tf_msg.transform.rotation.x = transform_ground.getRotation().getX();
+				tf_msg.transform.rotation.y = transform_ground.getRotation().getY();
+				tf_msg.transform.rotation.z = transform_ground.getRotation().getZ();
+				tf_msg.transform.rotation.w = transform_ground.getRotation().getW();
+				tf_msg.child_frame_id = this->p_tf_frame_robot + "_ground";
+				ROS_DEBUG_NAMED("LocalPoseSensorClient", "tf %s -> %s", this->p_tf_frame_odom.c_str(), tf_msg.child_frame_id.c_str());
+			}
 		}
 
 		// send pose stamped
