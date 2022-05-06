@@ -92,11 +92,13 @@ protected:
 	std::string p_tf_frame_robot;
 	tf2_ros::TransformBroadcaster p_tf_broadcaster;
 	geometry_msgs::TransformStamped p_tf_anchor;
+	geometry_msgs::TransformStamped p_tf_anchor_robot;
 	double p_anchor_northing, p_anchor_easting, p_anchor_altitude;
 	bool p_publish_world_anchor;
 
 	ros::NodeHandle p_nh;
 	ros::Timer p_query_timer;
+	ros::Timer p_anchor_timer;
 	ros::Publisher p_pub_navsatfix;
 	ros::Publisher p_pub_imu;
 	ros::Publisher p_pub_pose;
@@ -107,6 +109,7 @@ protected:
 	JausAddress p_remote_addr;
 	bool p_has_access;
 	void pQueryCallback(const ros::TimerEvent& event);
+	void pAnchorRobotCallback(const ros::TimerEvent& event);
 	void anchorFixReceived(const sensor_msgs::NavSatFix::ConstPtr& fix);
 
 
