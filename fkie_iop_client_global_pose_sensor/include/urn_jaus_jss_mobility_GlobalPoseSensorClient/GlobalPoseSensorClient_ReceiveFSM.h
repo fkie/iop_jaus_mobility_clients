@@ -93,6 +93,7 @@ protected:
 	tf2_ros::TransformBroadcaster p_tf_broadcaster;
 	geometry_msgs::TransformStamped p_tf_anchor;
 	geometry_msgs::TransformStamped p_tf_anchor_robot;
+	geometry_msgs::TransformStamped p_tf_anchor_robot_ground;
 	double p_anchor_northing, p_anchor_easting, p_anchor_altitude;
 	bool p_publish_world_anchor;
 

@@ -113,6 +113,7 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	p_tf_anchor_robot.header.stamp = ros::Time::now();
 	p_tf_anchor_robot.header.frame_id = this->p_tf_frame_anchor;
 	p_tf_anchor_robot.child_frame_id = this->p_tf_frame_robot;
+	p_tf_anchor_robot_ground = p_tf_anchor_robot;
 
 	ROS_DEBUG_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str());
 	if (p_publish_world_anchor) {
@@ -140,17 +141,17 @@ void GlobalPoseSensorClient_ReceiveFSM::access_deactivated(std::string service_u
 {
 	p_has_access = false;
 	p_remote_addr = JausAddress(0);
-	if (p_publish_world_anchor) {
+//	if (p_publish_world_anchor) {
 		// restart anchor->robot tf if no global pose supported by robot switched to
-		p_anchor_timer = p_nh.createTimer(ros::Duration(1.0 / p_hz), &GlobalPoseSensorClient_ReceiveFSM::pAnchorRobotCallback, this);
-	}
+//		p_anchor_timer = p_nh.createTimer(ros::Duration(1.0 / p_hz), &GlobalPoseSensorClient_ReceiveFSM::pAnchorRobotCallback, this);
+//	}
 }
 
 void GlobalPoseSensorClient_ReceiveFSM::create_events(std::string service_uri, JausAddress component, bool by_query)
 {
-	if (p_anchor_timer.isValid()) {
-		p_anchor_timer.stop();
-	}
+	// if (p_anchor_timer.isValid()) {
+	// 	p_anchor_timer.stop();
+	// }
 	if (by_query) {
 		if (p_hz > 0) {
 			ROS_INFO_NAMED("GlobalPoseSensorClient", "create QUERY timer to get global pose from %s", component.str().c_str());
@@ -187,7 +188,9 @@ void GlobalPoseSensorClient_ReceiveFSM::pQueryCallback(const ros::TimerEvent& ev
 void GlobalPoseSensorClient_ReceiveFSM::pAnchorRobotCallback(const ros::TimerEvent& event)
 {
 	p_tf_anchor_robot.header.stamp = ros::Time::now();
+	p_tf_anchor_robot_ground.header.stamp = ros::Time::now();
 	p_tf_broadcaster.sendTransform(p_tf_anchor_robot);
+	p_tf_broadcaster.sendTransform(p_tf_anchor_robot_ground);
 }
 
 void GlobalPoseSensorClient_ReceiveFSM::event(JausAddress sender, unsigned short query_msg_id, unsigned int reportlen, const unsigned char* reportdata)
@@ -281,6 +284,7 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 			transform.header.frame_id = this->p_tf_frame_world;
 		}
 		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s, stamp: %d.%d", this->p_tf_frame_anchor.c_str(), this->p_tf_frame_robot.c_str(), transform.header.stamp.sec, transform.header.stamp.nsec);
+		p_tf_anchor_robot = transform;
 		p_tf_broadcaster.sendTransform(transform);
 		transform.transform.rotation.x = quat_yaw.x();
 		transform.transform.rotation.y = quat_yaw.y();
@@ -288,6 +292,7 @@ void GlobalPoseSensorClient_ReceiveFSM::handleReportGlobalPoseAction(ReportGloba
 		transform.transform.rotation.w = quat_yaw.w();
 		transform.child_frame_id = this->p_tf_frame_robot + "_ground";
 		ROS_DEBUG_NAMED("GlobalPoseSensorClient", "tf %s -> %s, stamp: %d.%d", this->p_tf_frame_anchor.c_str(), transform.child_frame_id.c_str(), transform.header.stamp.sec, transform.header.stamp.nsec);
+		p_tf_anchor_robot_ground = transform;
 		p_tf_broadcaster.sendTransform(transform);
 	}
 	// publish global pose
