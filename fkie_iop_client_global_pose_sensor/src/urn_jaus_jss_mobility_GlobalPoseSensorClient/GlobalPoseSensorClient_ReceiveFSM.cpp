@@ -114,6 +114,7 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 	p_tf_anchor_robot.header.frame_id = this->p_tf_frame_anchor;
 	p_tf_anchor_robot.child_frame_id = this->p_tf_frame_robot;
 	p_tf_anchor_robot_ground = p_tf_anchor_robot;
+	p_tf_anchor_robot_ground.child_frame_id = this->p_tf_frame_robot + "_ground";
 
 	ROS_DEBUG_NAMED("GlobalPoseSensorClient", "update anchor tf %s -> %s", this->p_tf_frame_world.c_str(), this->p_tf_frame_anchor.c_str());
 	if (p_publish_world_anchor) {
