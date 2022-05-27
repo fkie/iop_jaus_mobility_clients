@@ -174,9 +174,9 @@ void GlobalPoseSensorClient_ReceiveFSM::cancel_events(std::string service_uri, J
 		ROS_INFO_NAMED("GlobalPoseSensorClient", "cancel EVENT for global pose by %s", component.str().c_str());
 		pEventsClient_ReceiveFSM->cancel_event(*this, component, p_query_global_pose_msg);
 	}
-	if (p_anchor_timer.isValid()) {
-		p_anchor_timer.stop();
-	}
+	// if (p_anchor_timer.isValid()) {
+	// 	p_anchor_timer.stop();
+	// }
 }
 
 void GlobalPoseSensorClient_ReceiveFSM::pQueryCallback(const ros::TimerEvent& event)
