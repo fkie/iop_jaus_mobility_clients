@@ -40,13 +40,16 @@ along with this program; or you can read the full license at
 
 #include "LocalPoseSensorClient_ReceiveFSM_sm.h"
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/node_interfaces/node_base_interface.hpp>
+#include <rclcpp/node_interfaces/node_topics_interface.hpp>
 #include <fkie_iop_component/iop_component.hpp>
-#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <fkie_iop_ocu_slavelib/SlaveHandlerInterface.h>
 #include <fkie_iop_events/EventHandlerInterface.h>
+
 
 
 namespace urn_jaus_jss_mobility_LocalPoseSensorClient
@@ -93,7 +96,7 @@ protected:
 	bool p_send_inverse_trafo;
 	double p_hz;
 
-	tf2_ros::TransformBroadcaster p_tf_broadcaster;
+	std::unique_ptr<tf2_ros::TransformBroadcaster> p_tf_broadcaster;
 	rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr p_pub_odom;
 	rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr p_pub_pose;
 

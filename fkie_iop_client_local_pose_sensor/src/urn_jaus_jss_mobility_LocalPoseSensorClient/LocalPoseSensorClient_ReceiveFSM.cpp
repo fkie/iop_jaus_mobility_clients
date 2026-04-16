@@ -25,8 +25,8 @@ along with this program; or you can read the full license at
 #include <fkie_iop_builder/util.h>
 #include <fkie_iop_component/iop_config.hpp>
 #include <fkie_iop_ocu_slavelib/Slave.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Transform.h>
+#include <tf2/LinearMath/Quaternion.hpp>
+#include <tf2/LinearMath/Transform.hpp>
 
 using namespace JTS;
 using namespace iop::ocu;
@@ -38,8 +38,7 @@ namespace urn_jaus_jss_mobility_LocalPoseSensorClient
 
 LocalPoseSensorClient_ReceiveFSM::LocalPoseSensorClient_ReceiveFSM(std::shared_ptr<iop::Component> cmp, urn_jaus_jss_core_AccessControlClient::AccessControlClient_ReceiveFSM* pAccessControlClient_ReceiveFSM, urn_jaus_jss_core_EventsClient::EventsClient_ReceiveFSM* pEventsClient_ReceiveFSM, urn_jaus_jss_core_Transport::Transport_ReceiveFSM* pTransport_ReceiveFSM)
 : SlaveHandlerInterface(cmp, "LocalPoseSensorClient", 10.0),
-  logger(cmp->get_logger().get_child("LocalPoseSensorClient")),
-  p_tf_broadcaster(cmp)
+  logger(cmp->get_logger().get_child("LocalPoseSensorClient"))
 {
 
 	/*
@@ -49,6 +48,10 @@ LocalPoseSensorClient_ReceiveFSM::LocalPoseSensorClient_ReceiveFSM(std::shared_p
 	 */
 	context = new LocalPoseSensorClient_ReceiveFSMContext(*this);
 
+	this->p_tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(
+		cmp->get_node_parameters_interface(),
+		cmp->get_node_topics_interface()
+	);
 	this->pAccessControlClient_ReceiveFSM = pAccessControlClient_ReceiveFSM;
 	this->pEventsClient_ReceiveFSM = pEventsClient_ReceiveFSM;
 	this->pTransport_ReceiveFSM = pTransport_ReceiveFSM;
@@ -179,7 +182,7 @@ void LocalPoseSensorClient_ReceiveFSM::handleReportLocalPoseAction(ReportLocalPo
 			RCLCPP_DEBUG(logger, "tf %s i-> %s", this->p_tf_frame_robot.c_str(), this->p_tf_frame_odom.c_str());
 		}
 		if (! tf_msg.child_frame_id.empty()) {
-			p_tf_broadcaster.sendTransform(tf_msg);
+			p_tf_broadcaster->sendTransform(tf_msg);
 		}
 
 		// send pose stamped
