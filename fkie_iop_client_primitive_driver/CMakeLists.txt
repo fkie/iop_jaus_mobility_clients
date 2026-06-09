@@ -6,17 +6,6 @@ if(NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 99)
 endif()
 
-# set default c++ version
-if($ENV{ROS_DISTRO} MATCHES "foxy")
-  if(NOT CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 14)
-  endif()
-elseif($ENV{ROS_DISTRO} MATCHES "galactic")
-  if(NOT CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 17)
-  endif()
-endif()
-
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Wno-ignored-qualifiers)
 endif()
@@ -35,10 +24,10 @@ iop_export_service(
 ## Specify additional locations of header files
 iop_code_generator(
   IDLS
-    urn.jaus.jss.core-v1.0/AccessControlClient.xml
-    urn.jaus.jss.core-v1.0/EventsClient.xml
-    urn.jaus.jss.core-v1.0/Transport.xml
-    urn.jaus.jss.core-v1.0/ManagementClient.xml
+    urn.jaus.jss.core/AccessControlClient.xml
+    urn.jaus.jss.core/EventsClient.xml
+    urn.jaus.jss.core/Transport.xml
+    urn.jaus.jss.core/ManagementClient.xml
     urn.jaus.jss.mobility/PrimitiveDriverClient.xml
   OWN_IDLS
   OVERRIDES

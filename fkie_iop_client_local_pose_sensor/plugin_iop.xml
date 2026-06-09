@@ -1,5 +1,5 @@
 <library path="fkie_iop_client_local_pose_sensor">
 	<class name="LocalPoseSensorClient" type="urn_jaus_jss_mobility_LocalPoseSensorClient::LocalPoseSensorClientService" base_class_type="JTS::Service"
-		id="urn:jaus:jss:mobility:LocalPoseSensorClient" version="1.0">
+		id="urn:jaus:jss:mobility:LocalPoseSensorClient" version="1.1">
 	</class>
 </library>

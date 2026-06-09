@@ -1,5 +1,5 @@
 <library path="fkie_iop_client_global_pose_sensor">
 	<class name="GlobalPoseSensorClient" type="urn_jaus_jss_mobility_GlobalPoseSensorClient::GlobalPoseSensorClientService" base_class_type="JTS::Service"
-		id="urn:jaus:jss:mobility:GlobalPoseSensorClient" version="1.0">
+		id="urn:jaus:jss:mobility:GlobalPoseSensorClient" version="1.1">
 	</class>
 </library>

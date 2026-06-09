@@ -1,5 +1,5 @@
 <library path="fkie_iop_client_local_waypoint_list_driver">
 	<class name="LocalWaypointListDriverClient" type="urn_jaus_jss_mobility_LocalWaypointListDriverClient::LocalWaypointListDriverClientService" base_class_type="JTS::Service"
-		id="urn:jaus:jss:mobility:LocalWaypointListDriverClient" version="1.0">
+		id="urn:jaus:jss:mobility:LocalWaypointListDriverClient" version="1.1">
 	</class>
 </library>

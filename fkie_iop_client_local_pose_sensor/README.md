@@ -1,6 +1,8 @@
 This package is part of [ROS/IOP Bridge](https://github.com/fkie/iop_core/blob/master/README.md).
 
 
+>TODO: add support for ReportLocalPoseExt
+
 ## _fkie_iop_client_local_pose_sensor:_ LocalPoseSensorClient
 
 The local position received from IOP complient robot is published as ```Tf```, ```geometry_msgs::PoseStamped``` and ```nav_msgs::Odometry```
