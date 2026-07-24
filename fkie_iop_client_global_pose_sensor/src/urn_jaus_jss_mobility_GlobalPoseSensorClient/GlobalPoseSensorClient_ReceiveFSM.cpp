@@ -77,46 +77,38 @@ void GlobalPoseSensorClient_ReceiveFSM::setupNotifications()
 void GlobalPoseSensorClient_ReceiveFSM::setupIopConfiguration()
 {
     iop::Config cfg(cmp, "GlobalPoseSensorClient");
-    cfg.declare_param<std::string>("tf_frame_world", p_tf_frame_world, true,
+    cfg.param<std::string>("tf_frame_world", p_tf_frame_world, p_tf_frame_world, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
         "TF frame id used in ROS for global coordinates.",
         "Default: 'world'");
-    cfg.declare_param<std::string>("tf_frame_anchor", p_tf_frame_anchor, true,
+    cfg.param<std::string>("tf_frame_anchor", p_tf_frame_anchor, p_tf_frame_anchor, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
         "TF frame id for achor between world and robot frame. It is usefull for visualization in RViz.",
         "Default: 'anchor'");
-    cfg.declare_param<std::string>("tf_frame_robot", p_tf_frame_robot, true,
+    cfg.param<std::string>("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
         "TF frame id of the robot.",
         "Default: 'base_link'");
-    cfg.declare_param<double>("anchor_easting", p_anchor_easting, true,
+    cfg.param<double>("anchor_easting", p_anchor_easting, p_anchor_easting, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
         "Default easting coordinate for the anchor. It can be replaced by 'fix_anchor' topic.",
         "Default: 0.0");
-    cfg.declare_param<double>("anchor_northing", p_anchor_northing, true,
+    cfg.param<double>("anchor_northing", p_anchor_northing, p_anchor_northing, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
         "Default northing coordinate for the anchor. It can be replaced by 'fix_anchor' topic.",
         "Default: 0.0");
-    cfg.declare_param<double>("anchor_altitude", p_anchor_altitude, true,
+    cfg.param<double>("anchor_altitude", p_anchor_altitude, p_anchor_altitude, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
         "Default altitude coordinate for the anchor. It can be replaced by 'fix_anchor' topic.",
         "Default: 0.0");
-    cfg.declare_param<bool>("publish_world_anchor", p_publish_world_anchor, true,
+    cfg.param<bool>("publish_world_anchor", p_publish_world_anchor, p_publish_world_anchor, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_BOOL,
         "Enables the publishing of 'world' to 'anchor' tf. You can disable the publishing of this tf by this service and publish tf itself.",
         "Default: true");
-    cfg.declare_param<double>("hz", p_hz, true,
+    cfg.param<double>("hz", p_hz, p_hz, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
         "Sets how often the reports are requested. If use_queries is True hz must be greather then 0. In this case each time a Query message is sent to get a report. If use_queries is False an event is created to get Reports. In this case 0 disables the rate and an event of type on_change will be created.",
         "Default: 10.0");
-    cfg.param("tf_frame_world", p_tf_frame_world, p_tf_frame_world);
-    cfg.param("tf_frame_anchor", p_tf_frame_anchor, p_tf_frame_anchor);
-    cfg.param("tf_frame_robot", p_tf_frame_robot, p_tf_frame_robot);
-    cfg.param("anchor_easting", p_anchor_easting, p_anchor_easting);
-    cfg.param("anchor_northing", p_anchor_northing, p_anchor_northing);
-    cfg.param("anchor_altitude", p_anchor_altitude, p_anchor_altitude);
-    cfg.param("publish_world_anchor", p_publish_world_anchor, p_publish_world_anchor);
-    cfg.param("hz", p_hz, p_hz, false);
     p_pub_navsatfix = cfg.create_publisher<sensor_msgs::msg::NavSatFix>("fix", 1);
     p_pub_imu = cfg.create_publisher<sensor_msgs::msg::Imu>("imu", 1);
     p_pub_pose = cfg.create_publisher<geometry_msgs::msg::PoseStamped>("global_pose", 5);

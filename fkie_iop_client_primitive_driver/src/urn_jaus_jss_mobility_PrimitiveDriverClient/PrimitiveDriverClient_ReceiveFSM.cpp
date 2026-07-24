@@ -69,27 +69,23 @@ void PrimitiveDriverClient_ReceiveFSM::setupNotifications()
 void PrimitiveDriverClient_ReceiveFSM::setupIopConfiguration()
 {
     iop::Config cfg(cmp, "PrimitiveDriverClient");
-    cfg.declare_param<bool>("invert_yaw", p_invert_yaw, true,
+    cfg.param<bool>("use_stamped", p_use_stamped, true, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_BOOL,
         "Inverts the yaw control orientation.",
         "Default: true");
-    cfg.declare_param<bool>("use_stamped", p_use_stamped, true,
+    cfg.param<bool>("invert_yaw", p_invert_yaw, true, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_BOOL,
         "If true use geometry_msgs::TwistStamped instead of geometry_msgs::Twist to publish the commands.",
         "Default: true");
-    cfg.declare_param<double>("max_linear", p_max_linear, true,
+    double max_linear, max_angular;
+    cfg.param<double>("max_linear", max_linear, p_max_linear, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
         "The maximal velocity in twist message. Based on this value the received velocity will be scaled to maximal effort of 100 percent.",
         "Default: 1.0");
-    cfg.declare_param<double>("max_angular", p_max_angular, true,
+    cfg.param<double>("max_angular", max_angular, p_max_angular, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
         "The maximal angular velocity in twist message. Based on this value the received velocity will be scaled to maximal effort of 100 percent.",
         "Default: 1.5");
-    cfg.param("use_stamped", p_use_stamped, true);
-    cfg.param("invert_yaw", p_invert_yaw, true);
-    double max_linear, max_angular;
-    cfg.param("max_linear", max_linear, p_max_linear);
-    cfg.param("max_angular", max_angular, p_max_angular);
     if (max_linear != 0) {
         p_max_linear = max_linear;
     }

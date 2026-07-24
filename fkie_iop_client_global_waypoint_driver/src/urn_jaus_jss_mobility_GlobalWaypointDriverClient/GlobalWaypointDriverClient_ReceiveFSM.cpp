@@ -47,31 +47,26 @@ void GlobalWaypointDriverClient_ReceiveFSM::setupNotifications()
 void GlobalWaypointDriverClient_ReceiveFSM::setupIopConfiguration()
 {
     iop::Config cfg(cmp, "GlobalWaypointDriverClient");
-    cfg.declare_param<std::string>("tf_frame_world", p_tf_frame_world, true,
+    cfg.param<std::string>("tf_frame_world", p_tf_frame_world, p_tf_frame_world, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
         "TF frame id used in ROS for global coordinates.",
         "Default: 'world'");
-    cfg.declare_param<std::string>("utm_zone", p_utm_zone, true,
+    cfg.param<std::string>("utm_zone", p_utm_zone, p_utm_zone, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_STRING,
         "The UTM zone is used for translation of ROS global position coordinates into Lat/Lon coordinates.",
         "Default: '32U'");
-    cfg.declare_param<double>("travel_speed", p_travel_speed, true,
+    cfg.param<float>("travel_speed", p_travel_speed, p_travel_speed, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
         "Initial travel speed used if a waypoint is set. This value can be changed by cmd_speed topic.",
         "Default: 1.0");
-    cfg.declare_param<double>("waypoint_tolerance", p_wp_tolerance, true,
+    cfg.param<float>("waypoint_tolerance", p_wp_tolerance, p_wp_tolerance, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
         "currently not used.",
         "Default: 1.0");
-    cfg.declare_param<double>("hz", p_hz, true,
+    cfg.param<double>("hz", p_hz, p_hz, true,
         rcl_interfaces::msg::ParameterType::PARAMETER_DOUBLE,
         "Sets how often the reports are requested. If use_queries is True hz must be greather then 0. In this case each time a Query message is sent to get a report. If use_queries is False an event is created to get Reports. In this case 0 disables the rate and an event of type on_change will be created.",
         "Default: 0.0");
-    cfg.param("travel_speed", p_travel_speed, p_travel_speed);
-    cfg.param("tf_frame_world", p_tf_frame_world, p_tf_frame_world);
-    cfg.param("utm_zone", p_utm_zone, p_utm_zone);
-    cfg.param("waypoint_tolerance", p_wp_tolerance, p_wp_tolerance);
-    cfg.param("hz", p_hz, p_hz, false);
     // RCLCPP_INFO(logger, "  waypoint_tolerance: %.2f", p_wp_tolerance);
     // create ROS subscriber
     //  p_sub_path = cfg.create_subscription<nav_msgs::msg::Path>("cmd_path", 1, &GlobalWaypointDriverClient_ReceiveFSM::pCmdPath, this);
